@@ -80,6 +80,8 @@ int main(int argc, char* argv[])
   Hermes::Hermes2D::Solution<double> sln;
   Hermes::Hermes2D::NewtonSolver<double> newton(&dp, matrix_solver_type);
 
+  newton.set_verbose_output(true);
+
   try
   {
     newton.solve(coeff_vec);
