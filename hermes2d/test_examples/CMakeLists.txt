@@ -12,6 +12,8 @@ add_subdirectory("7-3-05-newton-heat-rk")
 
 add_subdirectory("A-electrostatic-simple")
 
+add_subdirectory("B-electrostatic-adapt")
+
 # Commented out due to eigenproblems solver being reworked.
 #add_subdirectory("8-01-eigenvalue")
 

@@ -1,0 +1,138 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<mesh:mesh xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:element="XMLMesh" xsi:schemaLocation="XMLMesh /home/pkus/sources/agros2d/resources/xsd/mesh_h2d_xml.xsd" xmlns:mesh="XMLMesh">
+    <vertices>
+        <vertex x="-0.25" y="0.25" i="0"/>
+        <vertex x="-0.25" y="-0.25" i="1"/>
+        <vertex x="0.25" y="-0.25" i="2"/>
+        <vertex x="0.25" y="0.25" i="3"/>
+        <vertex x="-0.05" y="0.05" i="4"/>
+        <vertex x="-0.05" y="-0.05" i="5"/>
+        <vertex x="0.05" y="-0.05" i="6"/>
+        <vertex x="0.05" y="0.05" i="7"/>
+        <vertex x="-0.25" y="0" i="8"/>
+        <vertex x="0" y="0.25" i="9"/>
+        <vertex x="0" y="-0.25" i="10"/>
+        <vertex x="0.25" y="0" i="11"/>
+        <vertex x="-0.14375" y="0" i="12"/>
+        <vertex x="0" y="0.14375" i="13"/>
+        <vertex x="0" y="-0.14375" i="14"/>
+        <vertex x="0.14375" y="0" i="15"/>
+        <vertex x="-0.158832" y="0.141168" i="16"/>
+        <vertex x="-0.25" y="-0.125" i="17"/>
+        <vertex x="0.141168" y="0.158832" i="18"/>
+        <vertex x="-0.125" y="-0.25" i="19"/>
+        <vertex x="0.125" y="-0.25" i="20"/>
+        <vertex x="0.25" y="-0.125" i="21"/>
+        <vertex x="-0.141829" y="-0.109289" i="22"/>
+        <vertex x="0.109289" y="-0.141829" i="23"/>
+        <vertex x="-0.05" y="0" i="24"/>
+        <vertex x="-0.096875" y="0.025" i="25"/>
+        <vertex x="-0.096875" y="-0.025" i="26"/>
+        <vertex x="0.0546445" y="-0.195915" i="27"/>
+        <vertex x="0.0546445" y="-0.14279" i="28"/>
+        <vertex x="0" y="-0.196875" i="29"/>
+        <vertex x="0" y="0.05" i="30"/>
+        <vertex x="0.025" y="0.096875" i="31"/>
+        <vertex x="-0.025" y="0.096875" i="32"/>
+        <vertex x="-0.195915" y="-0.0546445" i="33"/>
+        <vertex x="-0.14279" y="-0.0546445" i="34"/>
+        <vertex x="-0.196875" y="0" i="35"/>
+        <vertex x="-0.151291" y="0.0705842" i="36"/>
+        <vertex x="-0.104416" y="0.0955842" i="37"/>
+        <vertex x="0" y="0.196875" i="38"/>
+        <vertex x="0.0705842" y="0.151291" i="39"/>
+        <vertex x="0.0705842" y="0.204416" i="40"/>
+        <vertex x="0.196875" y="0" i="41"/>
+        <vertex x="0.195584" y="0.0794158" i="42"/>
+        <vertex x="0.142459" y="0.0794158" i="43"/>
+        <vertex x="0" y="-0.05" i="44"/>
+        <vertex x="-0.025" y="-0.096875" i="45"/>
+        <vertex x="0.025" y="-0.096875" i="46"/>
+        <vertex x="-0.0794158" y="0.195584" i="47"/>
+        <vertex x="-0.0794158" y="0.142459" i="48"/>
+        <vertex x="0.05" y="0" i="49"/>
+        <vertex x="0.096875" y="-0.025" i="50"/>
+        <vertex x="0.096875" y="0.025" i="51"/>
+        <vertex x="0.25" y="-0.0625" i="52"/>
+        <vertex x="0.196875" y="-0.0625" i="53"/>
+        <vertex x="-0.204416" y="0.0705842" i="54"/>
+        <vertex x="-0.1875" y="-0.25" i="55"/>
+        <vertex x="-0.1875" y="-0.1875" i="56"/>
+        <vertex x="-0.25" y="-0.1875" i="57"/>
+        <vertex x="-0.0625" y="-0.25" i="58"/>
+        <vertex x="-0.0625" y="-0.196875" i="59"/>
+        <vertex x="0.0955842" y="0.104416" i="60"/>
+        <vertex x="-0.125" y="0.25" i="61"/>
+        <vertex x="-0.204416" y="0.195584" i="62"/>
+        <vertex x="-0.0959146" y="-0.0796445" i="63"/>
+        <vertex x="0.25" y="-0.1875" i="64"/>
+        <vertex x="0.1875" y="-0.1875" i="65"/>
+        <vertex x="0.1875" y="-0.25" i="66"/>
+        <vertex x="0.0796445" y="-0.0959146" i="67"/>
+        <vertex x="0.25" y="0.125" i="68"/>
+        <vertex x="0.195584" y="0.204416" i="69"/>
+        <vertex x="-0.25" y="0.125" i="70"/>
+        <vertex x="-0.25" y="-0.0625" i="71"/>
+        <vertex x="-0.195915" y="-0.117144" i="72"/>
+        <vertex x="0.125" y="0.25" i="73"/>
+        <vertex x="-0.133415" y="-0.179644" i="74"/>
+        <vertex x="-0.0709146" y="-0.126519" i="75"/>
+        <vertex x="0.0625" y="-0.25" i="76"/>
+        <vertex x="0.117144" y="-0.195915" i="77"/>
+        <vertex x="0.126519" y="-0.0709146" i="78"/>
+        <vertex x="0.179644" y="-0.133415" i="79"/>
+    </vertices>
+    <elements>
+        <element:triangle v2="4" v3="12" marker="0" v1="5"/>
+        <element:triangle v2="23" v3="14" marker="0" v1="10"/>
+        <element:triangle v2="7" v3="13" marker="0" v1="4"/>
+        <element:triangle v2="22" v3="12" marker="0" v1="8"/>
+        <element:triangle v2="12" v3="4" marker="0" v1="16"/>
+        <element:triangle v2="13" v3="18" marker="0" v1="9"/>
+        <element:triangle v2="11" v3="18" marker="0" v1="15"/>
+        <element:triangle v2="5" v3="14" marker="0" v1="6"/>
+        <element:triangle v2="9" v3="16" marker="0" v1="13"/>
+        <element:triangle v2="6" v3="15" marker="0" v1="7"/>
+        <element:triangle v2="11" v3="15" marker="0" v1="21"/>
+        <element:triangle v2="12" v3="16" marker="0" v1="8"/>
+        <element:triangle v2="19" v3="17" marker="0" v1="1"/>
+        <element:triangle v2="10" v3="14" marker="0" v1="19"/>
+        <element:triangle v2="13" v3="7" marker="0" v1="18"/>
+        <element:triangle v2="9" v3="0" marker="0" v1="16"/>
+        <element:triangle v2="22" v3="5" marker="0" v1="12"/>
+        <element:triangle v2="21" v3="20" marker="0" v1="2"/>
+        <element:triangle v2="23" v3="6" marker="0" v1="14"/>
+        <element:triangle v2="11" v3="3" marker="0" v1="18"/>
+        <element:triangle v2="16" v3="4" marker="0" v1="13"/>
+        <element:triangle v2="16" v3="0" marker="0" v1="8"/>
+        <element:triangle v2="18" v3="7" marker="0" v1="15"/>
+        <element:triangle v2="17" v3="22" marker="0" v1="8"/>
+        <element:triangle v2="18" v3="3" marker="0" v1="9"/>
+        <element:triangle v2="19" v3="22" marker="0" v1="17"/>
+        <element:triangle v2="5" v3="22" marker="0" v1="14"/>
+        <element:triangle v2="20" v3="23" marker="0" v1="10"/>
+        <element:triangle v2="6" v3="23" marker="0" v1="15"/>
+        <element:triangle v2="22" v3="19" marker="0" v1="14"/>
+        <element:triangle v2="21" v3="23" marker="0" v1="20"/>
+        <element:triangle v2="23" v3="21" marker="0" v1="15"/>
+    </elements>
+    <edges>
+        <edge v2="4" marker="5" v1="5"/>
+        <edge v2="7" marker="8" v1="4"/>
+        <edge v2="5" marker="6" v1="6"/>
+        <edge v2="6" marker="7" v1="7"/>
+        <edge v2="11" marker="3" v1="21"/>
+        <edge v2="19" marker="4" v1="1"/>
+        <edge v2="1" marker="1" v1="17"/>
+        <edge v2="10" marker="4" v1="19"/>
+        <edge v2="0" marker="2" v1="9"/>
+        <edge v2="21" marker="3" v1="2"/>
+        <edge v2="2" marker="4" v1="20"/>
+        <edge v2="3" marker="3" v1="11"/>
+        <edge v2="8" marker="1" v1="0"/>
+        <edge v2="17" marker="1" v1="8"/>
+        <edge v2="9" marker="2" v1="3"/>
+        <edge v2="20" marker="4" v1="10"/>
+    </edges>
+    <curves/>
+</mesh:mesh>
