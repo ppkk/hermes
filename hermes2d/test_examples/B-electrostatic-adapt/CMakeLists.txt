@@ -1,6 +1,6 @@
 project(B-electrostatic-adapt)
 
-add_executable(${PROJECT_NAME} main.cpp definitions.cpp)
+add_executable(${PROJECT_NAME} main.cpp definitions.cpp solutionstore.cpp)
 
 set_property(TARGET ${PROJECT_NAME} PROPERTY COMPILE_FLAGS ${FLAGS})
 
