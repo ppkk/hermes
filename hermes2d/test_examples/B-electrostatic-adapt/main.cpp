@@ -26,10 +26,20 @@
 //
 // The following parameters can be changed:
 
+using namespace Hermes::Hermes2D::RefinementSelectors;
+
 const bool HERMES_VISUALIZATION = true;           // Set to "false" to suppress Hermes OpenGL visualization.
 const bool VTK_VISUALIZATION = true;              // Set to "true" to enable VTK output.
-const int P_INIT = 1;                              // Uniform polynomial degree of mesh elements.
+const int P_INIT = 2;                              // Uniform polynomial degree of mesh elements.
 const int INIT_REF_NUM = 0;                       // Number of initial uniform mesh refinements.
+
+const double THRESHOLD = 0.3;                     // This is a quantitative parameter of the adapt(...) function and
+const int STRATEGY = 0;                           // Adaptive strategy:
+//const CandList CAND_LIST = H2D_HP_ANISO;          // Predefined list of element refinement candidates. Possible values are
+//const CandList CAND_LIST = H2D_H_ANISO;
+const int MESH_REGULARITY = -1;                   // Maximum allowed level of hanging nodes:
+const double CONV_EXP = 1.0;                      // Default value is 1.0. This parameter influences the selection of
+
 
 // Possibilities: SOLVER_AMESOS, SOLVER_AZTECOO, SOLVER_MUMPS,
 // SOLVER_PETSC, SOLVER_SUPERLU, SOLVER_UMFPACK.
@@ -49,13 +59,14 @@ Solution<double>* solutions[STEPS + 1];
 Space<double>* refSpaces[STEPS + 1];
 Solution<double>* refSolutions[STEPS + 1];
 
-void adaptiveStep(int step, WeakForm<double>* wf)
+void adaptiveStep(int step, WeakForm<double>* wf, Selector<double>* selector)
 {
     refSpaces[step - 1] = Space<double>::construct_refined_space(spaces[step - 1]);
+    refSolutions[step - 1] = new Solution<double>(refSpaces[step - 1]->get_mesh());
     int ndof = refSpaces[step - 1]->get_num_dofs();
 
     // Initialize the FE problem.
-    DiscreteProblem<double> dp(wf, spaces[step - 1]);
+    DiscreteProblem<double> dp(wf, refSpaces[step - 1]);
 
     // Initial coefficient vector for the Newton's method.
     double* coeff_vec = new double[ndof];
@@ -78,8 +89,26 @@ void adaptiveStep(int step, WeakForm<double>* wf)
 
     Solution<double>::vector_to_solution(newton.get_sln_vector(), refSpaces[step - 1], refSolutions[step - 1]);
 
+    OGProjection<double>::project_global(spaces[step - 1], refSolutions[step - 1], solutions[step - 1], matrix_solver_type);
+
+    Mesh* newMesh = new Mesh();
+    newMesh->copy(spaces[step - 1]->get_mesh());
+    spaces[step] = spaces[step - 1]->dup(newMesh);
+    solutions[step] = new Solution<double>(newMesh);
+
+    Adapt<double>* adaptivity = new Adapt<double>(spaces[step]);
+    double err_est_rel = adaptivity->calc_err_est(solutions[step - 1], refSolutions[step - 1]) * 100;
+
+    // Report results.
+    info("ndof_coarse: %d, ndof_fine: %d, err_est_rel: %g%%",
+      spaces[step - 1]->get_num_dofs(), refSpaces[step - 1]->get_num_dofs(), err_est_rel);
+
+    adaptivity->adapt(selector, THRESHOLD, STRATEGY, MESH_REGULARITY);
+    info("new space: %d", spaces[step]->get_num_dofs());
+
     // Clean up.
     delete [] coeff_vec;
+    delete adaptivity;
 }
 
 int main(int argc, char* argv[])
@@ -104,10 +133,21 @@ int main(int argc, char* argv[])
     POTENTIAL1);
   Hermes::Hermes2D::EssentialBCs<double> bcs(Hermes::vector<Hermes::Hermes2D::EssentialBoundaryCondition<double>* >(&bc_essential_inner, &bc_essential_outer));
 
+
+  //Selector<double>* selector = new H1ProjBasedSelector<double>(H2D_HP_ANISO, CONV_EXP, H2DRS_DEFAULT_ORDER);
+  //Selector<double>* selector = new H1ProjBasedSelector<double>(H2D_H_ANISO, CONV_EXP, H2DRS_DEFAULT_ORDER);
+  Selector<double>* selector = new HOnlySelector<double>();
+
   // Create an H1 space with default shapeset.
   spaces[0] = new H1Space<double>(&mesh, &bcs, P_INIT);
+  solutions[0] = new Solution<double>(&mesh);
   int ndof = spaces[0]->get_num_dofs();
   info("ndof = %d", ndof);
+
+  for(int step = 1; step <= STEPS; step++)
+  {
+      adaptiveStep(step, &wf, selector);
+  }
 
 //  Hermes::Hermes2D::Views::ScalarView view("Solution", new Hermes::Hermes2D::Views::WinGeom(0, 0, 440, 350));
 //  view.show(&sln, Hermes::Hermes2D::Views::HERMES_EPS_HIGH);
