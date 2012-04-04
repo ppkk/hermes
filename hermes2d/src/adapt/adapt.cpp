@@ -13,6 +13,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Hermes2D.  If not, see <http://www.gnu.org/licenses/>.
 
+#include <iostream>
 #include "umfpack.h"
 #include "adapt.h"
 #include "hermes2d.h"
@@ -341,15 +342,16 @@ namespace Hermes
 
           // Get refinement suggestion
           ElementToRefine elem_ref(ids[id_to_refine], components[id_to_refine]);
-
+          
           // rsln[comp] may be unset if refinement_selectors[comp] == HOnlySelector or POnlySelector
           bool refined = current_refinement_selectors[components[id_to_refine]]->select_refinement(e, current_orders[id_to_refine], current_rslns[components[id_to_refine]], elem_ref);
-
+          
           //add to a list of elements that are going to be refined
 #pragma omp critical (elem_inx_to_proc)
           {
             idx[ids[id_to_refine]][components[id_to_refine]] = (int)elem_inx_to_proc.size();
             elem_inx_to_proc.push_back(elem_ref);
+            std::cout << (std::string)"id: " << elem_ref.id << (std::string)", split: " << elem_ref.split << (std::string)", p: " << elem_ref.p[0] << ',' << elem_ref.p[1] << ',' << elem_ref.p[2] << ',' << elem_ref.p[3] << std::endl;
           }
         }
       }

@@ -59,11 +59,16 @@ Solution<double>* solutions[STEPS + 1];
 Space<double>* refSpaces[STEPS + 1];
 Solution<double>* refSolutions[STEPS + 1];
 
+Views::OrderView order_view("Space");
+
 void adaptiveStep(int step, WeakForm<double>* wf, Selector<double>* selector)
 {
     refSpaces[step - 1] = Space<double>::construct_refined_space(spaces[step - 1]);
     refSolutions[step - 1] = new Solution<double>(refSpaces[step - 1]->get_mesh());
     int ndof = refSpaces[step - 1]->get_num_dofs();
+
+    order_view.show(refSpaces[step - 1]);
+    order_view.wait_for_keypress();
 
     // Initialize the FE problem.
     DiscreteProblem<double> dp(wf, refSpaces[step - 1]);
@@ -134,9 +139,9 @@ int main(int argc, char* argv[])
   Hermes::Hermes2D::EssentialBCs<double> bcs(Hermes::vector<Hermes::Hermes2D::EssentialBoundaryCondition<double>* >(&bc_essential_inner, &bc_essential_outer));
 
 
-  //Selector<double>* selector = new H1ProjBasedSelector<double>(H2D_HP_ANISO, CONV_EXP, H2DRS_DEFAULT_ORDER);
+  Selector<double>* selector = new H1ProjBasedSelector<double>(H2D_HP_ANISO, CONV_EXP, H2DRS_DEFAULT_ORDER);
   //Selector<double>* selector = new H1ProjBasedSelector<double>(H2D_H_ANISO, CONV_EXP, H2DRS_DEFAULT_ORDER);
-  Selector<double>* selector = new HOnlySelector<double>();
+  //Selector<double>* selector = new HOnlySelector<double>();
 
   // Create an H1 space with default shapeset.
   spaces[0] = new H1Space<double>(&mesh, &bcs, P_INIT);
