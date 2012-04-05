@@ -50,7 +50,7 @@ const double PERM_AIR = 8.854e-12;
 const double POTENTIAL0 = 0.0;
 const double POTENTIAL1 = 10.0;
 
-const int STEPS = 3;
+const int STEPS = 10;
 
 using namespace Hermes::Hermes2D;
 
@@ -60,6 +60,9 @@ Space<double>* refSpaces[STEPS + 1];
 Solution<double>* refSolutions[STEPS + 1];
 
 Views::OrderView order_view("Space");
+Views::ScalarView view("Solution", new Hermes::Hermes2D::Views::WinGeom(0, 0, 440, 350));
+Views::ScalarView view2("Solution2", new Hermes::Hermes2D::Views::WinGeom(0, 0, 440, 350));
+
 
 void adaptiveStep(int step, WeakForm<double>* wf, Selector<double>* selector)
 {
@@ -151,13 +154,17 @@ int main(int argc, char* argv[])
       adaptiveStep(step, &wf, selector);
   }
 
-  for(int step = 1; step <= STEPS; step++)
-  {
-      order_view.show(refSpaces[step - 1]);
-      order_view.wait_for_keypress();
-  }
+//  for(int step = 1; step <= STEPS; step++)
+//  {
+//      order_view.show(refSpaces[step - 1]);
+//      view.show(refSolutions[step-1], Views::HERMES_EPS_HIGH);
+//      order_view.wait_for_keypress();
+//  }
 
+  view.show(solutions[9]);
+  view2.show(refSolutions[0]);
 
+  view.wait_for_keypress();
 
 //  Hermes::Hermes2D::Views::ScalarView view("Solution", new Hermes::Hermes2D::Views::WinGeom(0, 0, 440, 350));
 //  view.show(&sln, Hermes::Hermes2D::Views::HERMES_EPS_HIGH);
