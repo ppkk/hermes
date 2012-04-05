@@ -67,9 +67,6 @@ void adaptiveStep(int step, WeakForm<double>* wf, Selector<double>* selector)
     refSolutions[step - 1] = new Solution<double>(refSpaces[step - 1]->get_mesh());
     int ndof = refSpaces[step - 1]->get_num_dofs();
 
-    order_view.show(refSpaces[step - 1]);
-    order_view.wait_for_keypress();
-
     // Initialize the FE problem.
     DiscreteProblem<double> dp(wf, refSpaces[step - 1]);
 
@@ -153,6 +150,14 @@ int main(int argc, char* argv[])
   {
       adaptiveStep(step, &wf, selector);
   }
+
+  for(int step = 1; step <= STEPS; step++)
+  {
+      order_view.show(refSpaces[step - 1]);
+      order_view.wait_for_keypress();
+  }
+
+
 
 //  Hermes::Hermes2D::Views::ScalarView view("Solution", new Hermes::Hermes2D::Views::WinGeom(0, 0, 440, 350));
 //  view.show(&sln, Hermes::Hermes2D::Views::HERMES_EPS_HIGH);
