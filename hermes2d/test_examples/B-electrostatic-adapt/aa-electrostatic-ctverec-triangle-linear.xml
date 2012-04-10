@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding='UTF-8' standalone='no'?>
-<mesh:mesh xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:element="XMLMesh" xsi:schemaLocation="XMLMesh /home/pkus/sources/agros2d/resources/xsd/mesh_h2d_xml.xsd" xmlns:mesh="XMLMesh">
+<mesh:mesh xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:element="XMLMesh" xsi:schemaLocation="XMLMesh ../../xml_schemas/mesh_h2d_xml.xsd" xmlns:mesh="XMLMesh">
     <vertices>
         <vertex x="-0.25" y="0.25" i="0"/>
         <vertex x="-0.25" y="-0.25" i="1"/>
