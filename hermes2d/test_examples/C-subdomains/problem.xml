@@ -1,0 +1,39 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<domain:domain xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="XMLSubdomains /home/pkus/sources/agros2d/resources/xsd/subdomains_h2d_xml.xsd" xmlns:domain="XMLSubdomains">
+    <vertices>
+        <vertex x="-0.326057" y="0.237895" i="0"/>
+        <vertex x="-0.305066" y="-0.285474" i="1"/>
+        <vertex x="0.299468" y="-0.267282" i="2"/>
+        <vertex x="0.305066" y="0.174923" i="3"/>
+        <vertex x="-0.315561" y="-0.0237895" i="4"/>
+        <vertex x="0" y="-0.0552757" i="5"/>
+        <vertex x="-0.0104954" y="0.206409" i="6"/>
+        <vertex x="0.302267" y="-0.0461797" i="7"/>
+        <vertex x="-0.00279877" y="-0.276378" i="8"/>
+    </vertices>
+    <elements>
+        <domain:triangle v2="1" v3="3" i="0" marker="1" v1="0"/>
+        <domain:triangle v2="3" v3="1" i="1" marker="1" v1="2"/>
+    </elements>
+    <edges>
+        <edge v2="1" i="0" marker="1" v1="0"/>
+        <edge v2="0" i="2" marker="4" v1="3"/>
+        <edge v2="3" i="3" marker="3" v1="2"/>
+        <edge v2="2" i="4" marker="2" v1="1"/>
+    </edges>
+    <curves/>
+    <subdomains>
+        <subdomain name="heat">
+            <elements>
+                <i>0</i>
+                <i>1</i>
+            </elements>
+            <boundary_edges>
+                <i>0</i>
+                <i>2</i>
+                <i>3</i>
+                <i>4</i>
+            </boundary_edges>
+        </subdomain>
+    </subdomains>
+</domain:domain>
