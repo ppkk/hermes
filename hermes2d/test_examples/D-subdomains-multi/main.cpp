@@ -18,10 +18,9 @@ int main(int argc, char* argv[])
 {
   // Load the mesh.
   Mesh mesh_whole_domain, mesh_bottom_left_corner, mesh_complement;
-  Hermes::vector<Mesh*> meshes;// (&mesh_whole_domain, &mesh_bottom_left_corner, &mesh_complement);
-  meshes.push_back(&mesh_whole_domain);
+  Hermes::vector<Mesh*> meshes(&mesh_whole_domain, &mesh_bottom_left_corner, &mesh_complement);
   MeshReaderH2DXML mloader;
-  mloader.load("problem.xml", meshes);
+  mloader.load("problem-multi.xml", meshes);
 
   // Perform initial mesh refinements (optional).
   for(int i = 0; i < INIT_REF_NUM; i++)
@@ -32,7 +31,7 @@ int main(int argc, char* argv[])
   mloader.load("problem2.xml", meshes);
 
   // Initialize essential boundary conditions.
-  DefaultEssentialBCConst<double> bc_essential_whole_domain(Hermes::vector<std::string>("1", "2", "3", "4"), 0.0);
+  DefaultEssentialBCConst<double> bc_essential_whole_domain(Hermes::vector<std::string>("0", "1", "2", "3", "4", "5"), 0.0);
   EssentialBCs<double> bcs_whole_domain(&bc_essential_whole_domain);
 
 //  DefaultEssentialBCConst<double> bc_essential_bottom_left_corner(Hermes::vector<std::string>("Bottom Left", "Horizontal Left"), 0.0);
@@ -51,6 +50,7 @@ int main(int argc, char* argv[])
 //  H1Space<double> space_complement(&mesh_complement, &bcs_complement, P_INIT);
 //  int ndof_complement = space_complement.get_num_dofs();
 
+  info("ndofs: %d\n", ndof_whole_domain);
   if(ndof_whole_domain == 9)
   {
     info("Success!");

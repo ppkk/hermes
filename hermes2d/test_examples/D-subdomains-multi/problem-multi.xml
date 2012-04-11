@@ -1,0 +1,95 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<domain:domain xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="XMLSubdomains ../../xml_schemas/subdomains_h2d_xml.xsd" xmlns:domain="XMLSubdomains">
+    <vertices>
+        <vertex x="0" y="0.25" i="0"/>
+        <vertex x="0" y="-0.25" i="1"/>
+        <vertex x="0.25" y="-0.25" i="2"/>
+        <vertex x="0.25" y="0.25" i="3"/>
+        <vertex x="0" y="0" i="4"/>
+        <vertex x="0.25" y="0" i="5"/>
+        <vertex x="0" y="-0.125" i="6"/>
+        <vertex x="0.125" y="-0.25" i="7"/>
+        <vertex x="0.125" y="-0.125" i="8"/>
+        <vertex x="0" y="0.125" i="9"/>
+        <vertex x="0.125" y="0" i="10"/>
+        <vertex x="0.125" y="0.125" i="11"/>
+        <vertex x="0.25" y="-0.125" i="12"/>
+        <vertex x="0.25" y="0.125" i="13"/>
+        <vertex x="0.125" y="0.25" i="14"/>
+    </vertices>
+    <elements>
+        <domain:triangle v2="1" v3="2" i="0" marker="0" v1="4"/>
+        <domain:triangle v2="4" v3="5" i="1" marker="1" v1="0"/>
+        <domain:triangle v2="5" v3="4" i="2" marker="0" v1="2"/>
+        <domain:triangle v2="3" v3="0" i="3" marker="1" v1="5"/>
+    </elements>
+    <edges>
+        <edge v2="1" i="0" marker="3" v1="4"/>
+        <edge v2="2" i="1" marker="1" v1="1"/>
+        <edge v2="4" i="3" marker="2" v1="0"/>
+        <edge v2="5" i="4" marker="6" v1="4"/>
+        <edge v2="5" i="6" marker="5" v1="2"/>
+        <edge v2="3" i="7" marker="4" v1="5"/>
+        <edge v2="0" i="8" marker="0" v1="3"/>
+    </edges>
+    <curves/>
+    <subdomains>
+        <subdomain name="current">
+            <elements>
+                <i>0</i>
+                <i>1</i>
+                <i>2</i>
+                <i>3</i>
+            </elements>
+            <boundary_edges>
+                <i>0</i>
+                <i>1</i>
+                <i>3</i>
+                <i>6</i>
+                <i>7</i>
+                <i>8</i>
+            </boundary_edges>
+            <inner_edges>
+                <i>4</i>
+            </inner_edges>
+        </subdomain>
+        <subdomain name="elasticity">
+            <elements>
+                <i>0</i>
+                <i>1</i>
+                <i>2</i>
+                <i>3</i>
+            </elements>
+            <boundary_edges>
+                <i>0</i>
+                <i>1</i>
+                <i>3</i>
+                <i>6</i>
+                <i>7</i>
+                <i>8</i>
+            </boundary_edges>
+            <inner_edges>
+                <i>4</i>
+            </inner_edges>
+        </subdomain>
+        <subdomain name="heat">
+            <elements>
+                <i>0</i>
+                <i>1</i>
+                <i>2</i>
+                <i>3</i>
+            </elements>
+            <boundary_edges>
+                <i>0</i>
+                <i>1</i>
+                <i>3</i>
+                <i>6</i>
+                <i>7</i>
+                <i>8</i>
+            </boundary_edges>
+            <inner_edges>
+                <i>4</i>
+            </inner_edges>
+        </subdomain>
+    </subdomains>
+</domain:domain>

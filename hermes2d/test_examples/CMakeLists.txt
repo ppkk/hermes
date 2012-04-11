@@ -16,6 +16,8 @@ add_subdirectory("B-electrostatic-adapt")
 
 add_subdirectory("C-subdomains")
 
+add_subdirectory("D-subdomains-multi")
+
 # Commented out due to eigenproblems solver being reworked.
 #add_subdirectory("8-01-eigenvalue")
 
