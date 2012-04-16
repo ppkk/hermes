@@ -1,6 +1,8 @@
 #define HERMES_REPORT_INFO
 #include "hermes2d.h"
 
+#include "definitions.h"
+
 using namespace Hermes;
 using namespace Hermes::Hermes2D;
 
@@ -13,6 +15,9 @@ const int INIT_REF_NUM = 0;
 // Possibilities: SOLVER_AMESOS, SOLVER_AZTECOO, SOLVER_MUMPS,
 // SOLVER_PETSC, SOLVER_SUPERLU, SOLVER_UMFPACK.
 Hermes::MatrixSolverType matrix_solver_type = Hermes::SOLVER_UMFPACK;
+const double NEWTON_TOL = 1e-4;
+// Maximum allowed number of Newton iterations.
+const int NEWTON_MAX_ITER = 100;
 
 int main(int argc, char* argv[])
 {
@@ -52,6 +57,96 @@ int main(int argc, char* argv[])
 
   info("ndofs current: %d\n", ndof_current);
   info("ndofs heat: %d\n", ndof_heat);
+
+//  Hermes::vector<Space<double> *> all_spaces(&space_current, &space_heat);
+//  Hermes::vector<const Space<double> *> all_spaces_const(&space_current, &space_heat);
+
+//  // Calculate and report the number of degrees of freedom.
+//  int ndof = Space<double>::get_num_dofs(all_spaces_const);
+//  info("ndof = %d.", ndof);
+
+//  double* coeff_vec = new double[ndof];
+
+  // Initialize weak formulation.
+  CustomWeakFormCurrent wf_current;
+
+  // Initialize the FE problem.
+  DiscreteProblem<double> dp_current(&wf_current, &space_current);
+
+  // Initialize the Newton solver.
+  NewtonSolver<double> newton_current(&dp_current, matrix_solver_type);
+  double *coeff_vec_current = new double[ndof_current];
+
+    // Perform Newton's iteration.
+    info("Solving nonlinear problem:");
+    bool verbose = true;
+    // Perform Newton's iteration and translate the resulting coefficient vector into previous time level solutions.
+    newton_current.set_verbose_output(verbose);
+    try
+    {
+      newton_current.solve(coeff_vec_current, NEWTON_TOL, NEWTON_MAX_ITER);
+    }
+    catch(Hermes::Exceptions::Exception e)
+    {
+      e.printMsg();
+      error("Newton's iteration failed for current.");
+    };
+
+    Solution<double> solution_current;
+    Solution<double>::vector_to_solution(newton_current.get_sln_vector(), &space_current, &solution_current);
+
+
+    // Initialize weak formulation.
+    CustomWeakFormHeat wf_heat(&solution_current);
+
+    // Initialize the FE problem.
+    DiscreteProblem<double> dp_heat(&wf_heat, &space_heat);
+
+    // Initialize the Newton solver.
+    NewtonSolver<double> newton_heat(&dp_heat, matrix_solver_type);
+    double *coeff_vec_heat = new double[ndof_heat];
+
+          // Perform Newton's iteration.
+          info("Solving nonlinear problem:");
+          // Perform Newton's iteration and translate the resulting coefficient vector into previous time level solutions.
+          newton_heat.set_verbose_output(verbose);
+          try
+          {
+            newton_heat.solve(coeff_vec_heat, NEWTON_TOL, NEWTON_MAX_ITER);
+          }
+          catch(Hermes::Exceptions::Exception e)
+          {
+            e.printMsg();
+            error("Newton's iteration failed for heat.");
+          };
+
+    //      Solution<double> solution_heat;
+
+//    {
+//      Hermes::vector<Solution<double> *> tmp(&xvel_prev_time, &yvel_prev_time, &p_prev_time, &temperature_prev_time);
+//      Solution<double>::vector_to_solutions(newton.get_sln_vector(), Hermes::vector<const Space<double> *>(&xvel_space,
+//          &yvel_space, &p_space, &temperature_space), tmp);
+//    }
+
+//    // Show the solution at the end of time step.
+//    sprintf(title, "Velocity [m/s], time %g s", current_time);
+//    vview.set_title(title);
+//    vview.show(&xvel_prev_time, &yvel_prev_time);
+//    sprintf(title, "Pressure [Pa], time %g s", current_time);
+//    pview.set_title(title);
+//    pview.show(&p_prev_time);
+//    sprintf(title, "Temperature [C], time %g s", current_time);
+//    tempview.set_title(title);
+//    tempview.show(&temperature_prev_time, Views::HERMES_EPS_HIGH);
+//  }
+
+  delete [] coeff_vec_current;
+
+  // Wait for all views to be closed.
+  Views::View::wait();
+  return 0;
+
+
 //  if(ndof_whole_domain == 9)
 //  {
 //    info("Success!");
