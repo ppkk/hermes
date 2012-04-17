@@ -1,0 +1,124 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<domain:domain xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="XMLSubdomains /home/pkus/sources/agros2d/resources/xsd/subdomains_h2d_xml.xsd" xmlns:domain="XMLSubdomains">
+    <vertices>
+        <vertex x="0" y="0.1" i="0"/>
+        <vertex x="0" y="-0.1" i="1"/>
+        <vertex x="0.3" y="-0.1" i="2"/>
+        <vertex x="0.3" y="0.1" i="3"/>
+        <vertex x="0.1" y="0.1" i="4"/>
+        <vertex x="0.2" y="0.1" i="5"/>
+        <vertex x="0.1" y="-0.1" i="6"/>
+        <vertex x="0.2" y="-0.1" i="7"/>
+        <vertex x="0.1" y="0.025" i="8"/>
+        <vertex x="0" y="0" i="9"/>
+        <vertex x="0.2" y="-0.025" i="10"/>
+        <vertex x="0.3" y="0" i="11"/>
+        <vertex x="0.1" y="0.0625" i="12"/>
+        <vertex x="0.05" y="0.1" i="13"/>
+        <vertex x="0.05" y="0.0625" i="14"/>
+        <vertex x="0.1" y="-0.0375" i="15"/>
+        <vertex x="0.05" y="0.0125" i="16"/>
+        <vertex x="0.05" y="-0.05" i="17"/>
+        <vertex x="0.05" y="-0.1" i="18"/>
+        <vertex x="0" y="-0.05" i="19"/>
+        <vertex x="0.15" y="0" i="20"/>
+        <vertex x="0.15" y="-0.0625" i="21"/>
+        <vertex x="0.2" y="-0.0625" i="22"/>
+        <vertex x="0.15" y="-0.1" i="23"/>
+        <vertex x="0.25" y="0.1" i="24"/>
+        <vertex x="0.25" y="0.05" i="25"/>
+        <vertex x="0.3" y="0.05" i="26"/>
+        <vertex x="0.25" y="-0.0625" i="27"/>
+        <vertex x="0.3" y="-0.05" i="28"/>
+        <vertex x="0.25" y="-0.0125" i="29"/>
+        <vertex x="0.2" y="0.0375" i="30"/>
+        <vertex x="0.25" y="-0.1" i="31"/>
+        <vertex x="0.15" y="0.0625" i="32"/>
+        <vertex x="0.15" y="0.1" i="33"/>
+        <vertex x="0" y="0.05" i="34"/>
+    </vertices>
+    <elements>
+        <domain:triangle v2="4" v3="0" i="0" marker="1" v1="8"/>
+        <domain:triangle v2="8" v3="9" i="1" marker="1" v1="6"/>
+        <domain:triangle v2="6" v3="9" i="2" marker="1" v1="1"/>
+        <domain:triangle v2="8" v3="6" i="3" marker="0" v1="10"/>
+        <domain:triangle v2="10" v3="6" i="4" marker="0" v1="7"/>
+        <domain:triangle v2="5" v3="11" i="5" marker="2" v1="3"/>
+        <domain:triangle v2="2" v3="11" i="6" marker="2" v1="10"/>
+        <domain:triangle v2="10" v3="11" i="7" marker="2" v1="5"/>
+        <domain:triangle v2="7" v3="2" i="8" marker="2" v1="10"/>
+        <domain:triangle v2="8" v3="10" i="9" marker="0" v1="5"/>
+        <domain:triangle v2="4" v3="8" i="10" marker="0" v1="5"/>
+        <domain:triangle v2="0" v3="9" i="11" marker="1" v1="8"/>
+    </elements>
+    <edges>
+        <edge v2="4" i="0" marker="8" v1="8"/>
+        <edge v2="0" i="1" marker="2" v1="4"/>
+        <edge v2="8" i="3" marker="8" v1="6"/>
+        <edge v2="6" i="6" marker="5" v1="1"/>
+        <edge v2="1" i="7" marker="1" v1="9"/>
+        <edge v2="10" i="10" marker="9" v1="7"/>
+        <edge v2="7" i="11" marker="6" v1="6"/>
+        <edge v2="5" i="12" marker="4" v1="3"/>
+        <edge v2="3" i="14" marker="0" v1="11"/>
+        <edge v2="11" i="16" marker="0" v1="2"/>
+        <edge v2="10" i="18" marker="9" v1="5"/>
+        <edge v2="2" i="19" marker="7" v1="7"/>
+        <edge v2="4" i="21" marker="3" v1="5"/>
+        <edge v2="9" i="22" marker="1" v1="0"/>
+    </edges>
+    <curves/>
+    <subdomains>
+        <subdomain name="current">
+            <elements>
+                <i>3</i>
+                <i>4</i>
+                <i>9</i>
+                <i>10</i>
+            </elements>
+            <boundary_edges>
+                <i>0</i>
+                <i>3</i>
+                <i>10</i>
+                <i>11</i>
+                <i>18</i>
+                <i>21</i>
+            </boundary_edges>
+            <inner_edges/>
+        </subdomain>
+        <subdomain name="heat">
+            <elements>
+                <i>0</i>
+                <i>1</i>
+                <i>2</i>
+                <i>3</i>
+                <i>4</i>
+                <i>5</i>
+                <i>6</i>
+                <i>7</i>
+                <i>8</i>
+                <i>9</i>
+                <i>10</i>
+                <i>11</i>
+            </elements>
+            <boundary_edges>
+                <i>1</i>
+                <i>6</i>
+                <i>7</i>
+                <i>11</i>
+                <i>12</i>
+                <i>14</i>
+                <i>16</i>
+                <i>19</i>
+                <i>21</i>
+                <i>22</i>
+            </boundary_edges>
+            <inner_edges>
+                <i>0</i>
+                <i>3</i>
+                <i>10</i>
+                <i>18</i>
+            </inner_edges>
+        </subdomain>
+    </subdomains>
+</domain:domain>
