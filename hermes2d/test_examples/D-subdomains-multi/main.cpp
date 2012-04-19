@@ -32,8 +32,8 @@ int main(int argc, char* argv[])
     for(unsigned int meshes_i = 0; meshes_i < meshes.size(); meshes_i++)
       meshes[meshes_i]->refine_all_elements();
 
-  mloader.save("problem2.xml", meshes);
-  mloader.load("problem2.xml", meshes);
+//  mloader.save("problem2.xml", meshes);
+//  mloader.load("problem2.xml", meshes);
 
   // Initialize essential boundary conditions.
   DefaultEssentialBCConst<double> bc_essential_current(Hermes::vector<std::string>("8", "9", "6", "3"), 0.0);

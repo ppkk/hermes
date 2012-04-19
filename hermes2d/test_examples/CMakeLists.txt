@@ -18,6 +18,8 @@ add_subdirectory("C-subdomains")
 
 add_subdirectory("D-subdomains-multi")
 
+add_subdirectory("E-singlemesh")
+
 # Commented out due to eigenproblems solver being reworked.
 #add_subdirectory("8-01-eigenvalue")
 

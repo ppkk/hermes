@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding='UTF-8' standalone='no'?>
-<domain:domain xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="XMLSubdomains /home/pkus/sources/agros2d/resources/xsd/subdomains_h2d_xml.xsd" xmlns:domain="XMLSubdomains">
+<domain:domain xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="XMLSubdomains /home/pkus/sources/hermes/hermes2d/xml_schemas/subdomains_h2d_xml.xsd" xmlns:domain="XMLSubdomains">
     <vertices>
         <vertex x="0" y="0.1" i="0"/>
         <vertex x="0" y="-0.1" i="1"/>
