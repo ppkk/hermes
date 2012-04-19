@@ -832,7 +832,7 @@ namespace Hermes
         int counter = 0;
         double min_elem_area = 1e30;
         Element* e;
-        for_all_elements_with_unused(e, meshes[0])
+        for_all_base_elements_with_unused(e, meshes[0])
         {
           if(!e->used)
             areas[counter] = 0;
@@ -853,7 +853,7 @@ namespace Hermes
         for (int i = 1; i < n; i++)
         {
           counter = 0;
-          for_all_elements_with_unused(e, meshes[i])
+          for_all_base_elements_with_unused(e, meshes[i])
           {
             if(e->used)
             {
