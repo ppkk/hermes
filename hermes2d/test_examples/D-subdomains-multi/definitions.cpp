@@ -40,7 +40,7 @@ CustomWeakFormHeat::CustomWeakFormHeat(Hermes::Hermes2D::Solution<double>* solut
 }
 
 CustomVectorFormVol::CustomVectorFormVol(int i, Hermes::Hermes2D::Solution<double>* solution_current)
-  : VectorFormVol<double>(i)
+  : VectorFormVol<double>(i, "0")
 {
     m_solution_current = solution_current;
     ext.push_back(solution_current);
@@ -66,5 +66,5 @@ Ord CustomVectorFormVol::ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *v
 
 VectorFormVol<double>* CustomVectorFormVol::clone()
 {
-    return new CustomVectorFormVol(1, m_solution_current);
+    return new CustomVectorFormVol(this->i, m_solution_current);
 }
