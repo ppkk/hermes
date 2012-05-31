@@ -24,6 +24,7 @@
     <domain:quad v1="1" v2="2" v3="7" v4="6" marker="mag" i="2" />
     <domain:quad v1="2" v2="3" v3="8" v4="7" marker="mag" i="3" />
     <domain:quad v1="9" v2="8" v3="3" v4="4" marker="mag" i="4" />
+    <domain:quad v1="6" v2="7" v3="8" v4="9" marker="mag" i="5" />
   </elements>
 
   <edges>
@@ -54,6 +55,7 @@
         <i>2</i>
         <i>3</i>
         <i>4</i>
+        <i>5</i>
       </elements>
       <boundary_edges>
         <i>0</i>
@@ -62,13 +64,13 @@
         <i>3</i>
         <i>4</i>
         <i>5</i>
+      </boundary_edges>
+      <inner_edges>
+        <i>6</i>
         <i>11</i>
         <i>12</i>
         <i>13</i>
         <i>14</i>
-      </boundary_edges>
-      <inner_edges>
-        <i>6</i>
       </inner_edges>
     </subdomain>
     <subdomain name="elast">
