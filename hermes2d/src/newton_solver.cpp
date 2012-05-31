@@ -189,7 +189,7 @@ namespace Hermes
 
         // Solve the linear system.
         if(!linear_solver->solve())
-          throw Exceptions::LinearSolverException();
+          throw Exceptions::LinearMatrixSolverException();
 
         // Add \deltaY^{n + 1} to Y^n.
         for (int i = 0; i < ndof; i++)
@@ -315,7 +315,7 @@ namespace Hermes
 
         // Solve the linear system.
         if(!linear_solver->solve()) {
-          throw Exceptions::LinearSolverException();
+          throw Exceptions::LinearMatrixSolverException();
         }
 
         // Add \deltaY^{n + 1} to Y^n.
