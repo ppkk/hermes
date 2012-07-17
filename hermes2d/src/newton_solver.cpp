@@ -96,6 +96,12 @@ namespace Hermes
       {
         // Assemble just the residual vector.
         this->dp->assemble(coeff_vec, residual);
+          char filename[20], varname[20];
+          sprintf(filename, "residual_hermes%d.m", it);
+          sprintf(varname, "res_hermes%d", it);
+        FILE* resfile = fopen(filename, "w");
+        residual->dump(resfile, varname);
+        fclose(resfile);
 
         if (this->timer != NULL)
         {
@@ -175,8 +181,11 @@ namespace Hermes
         }
         // Assemble just the jacobian.
         this->dp->assemble(coeff_vec, jacobian);
-        FILE* f = fopen("jac.txt", "w");
-        jacobian->dump(f, "jac");
+        sprintf(filename, "jacobian_hermes%d.m", it);
+        sprintf(varname, "jac_hermes%d", it);
+        FILE* jacfile = fopen(filename, "w");
+        jacobian->dump(jacfile, varname);
+        fclose(jacfile);
         if (this->timer != NULL)
         {
           this->timer->tick();
