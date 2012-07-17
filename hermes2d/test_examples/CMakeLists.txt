@@ -20,6 +20,8 @@ add_subdirectory("D-subdomains-multi")
 
 add_subdirectory("E-singlemesh")
 
+add_subdirectory("F-navier-stokes")
+
 # Commented out due to eigenproblems solver being reworked.
 #add_subdirectory("8-01-eigenvalue")
 
