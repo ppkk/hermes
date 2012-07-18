@@ -63,114 +63,118 @@ Views::OrderView order_view("Space");
 Views::ScalarView view("Solution", new Hermes::Hermes2D::Views::WinGeom(0, 0, 440, 350));
 Views::ScalarView view2("Solution2", new Hermes::Hermes2D::Views::WinGeom(0, 0, 440, 350));
 
+int main()
+{
+
+}
 
 void adaptiveStep(int step, WeakForm<double>* wf, Selector<double>* selector)
 {
-    refSpaces[step - 1] = Space<double>::construct_refined_space(spaces[step - 1]);
-    refSolutions[step - 1] = new Solution<double>(refSpaces[step - 1]->get_mesh());
-    int ndof = refSpaces[step - 1]->get_num_dofs();
+//    refSpaces[step - 1] = Space<double>::construct_refined_space(spaces[step - 1]);
+//    refSolutions[step - 1] = new Solution<double>(refSpaces[step - 1]->get_mesh());
+//    int ndof = refSpaces[step - 1]->get_num_dofs();
 
-    // Initialize the FE problem.
-    DiscreteProblem<double> dp(wf, refSpaces[step - 1]);
+//    // Initialize the FE problem.
+//    DiscreteProblem<double> dp(wf, refSpaces[step - 1]);
 
-    // Initial coefficient vector for the Newton's method.
-    double* coeff_vec = new double[ndof];
-    memset(coeff_vec, 0, ndof*sizeof(double));
+//    // Initial coefficient vector for the Newton's method.
+//    double* coeff_vec = new double[ndof];
+//    memset(coeff_vec, 0, ndof*sizeof(double));
 
-    // Perform Newton's iteration and translate the resulting coefficient vector into a Solution.
-    NewtonSolver<double> newton(&dp, matrix_solver_type);
+//    // Perform Newton's iteration and translate the resulting coefficient vector into a Solution.
+//    NewtonSolver<double> newton(&dp, matrix_solver_type);
 
-    newton.set_verbose_output(true);
+//    newton.set_verbose_output(true);
 
-    try
-    {
-      newton.solve(coeff_vec);
-    }
-    catch(Hermes::Exceptions::Exception e)
-    {
-      e.printMsg();
-      error("Newton's iteration failed.");
-    }
+//    try
+//    {
+//      newton.solve(coeff_vec);
+//    }
+//    catch(Hermes::Exceptions::Exception e)
+//    {
+//      e.printMsg();
+//      error("Newton's iteration failed.");
+//    }
 
-    Solution<double>::vector_to_solution(newton.get_sln_vector(), refSpaces[step - 1], refSolutions[step - 1]);
+//    Solution<double>::vector_to_solution(newton.get_sln_vector(), refSpaces[step - 1], refSolutions[step - 1]);
 
-    OGProjection<double>::project_global(spaces[step - 1], refSolutions[step - 1], solutions[step - 1], matrix_solver_type);
+//    OGProjection<double>::project_global(spaces[step - 1], refSolutions[step - 1], solutions[step - 1], matrix_solver_type);
 
-    Mesh* newMesh = new Mesh();
-    newMesh->copy(spaces[step - 1]->get_mesh());
-    spaces[step] = spaces[step - 1]->dup(newMesh);
-    solutions[step] = new Solution<double>(newMesh);
+//    Mesh* newMesh = new Mesh();
+//    newMesh->copy(spaces[step - 1]->get_mesh());
+//    spaces[step] = spaces[step - 1]->dup(newMesh);
+//    solutions[step] = new Solution<double>(newMesh);
 
-    Adapt<double>* adaptivity = new Adapt<double>(spaces[step]);
-    double err_est_rel = adaptivity->calc_err_est(solutions[step - 1], refSolutions[step - 1]) * 100;
+//    Adapt<double>* adaptivity = new Adapt<double>(spaces[step]);
+//    double err_est_rel = adaptivity->calc_err_est(solutions[step - 1], refSolutions[step - 1]) * 100;
 
-    // Report results.
-    info("ndof_coarse: %d, ndof_fine: %d, err_est_rel: %g%%",
-      spaces[step - 1]->get_num_dofs(), refSpaces[step - 1]->get_num_dofs(), err_est_rel);
+//    // Report results.
+//    info("ndof_coarse: %d, ndof_fine: %d, err_est_rel: %g%%",
+//      spaces[step - 1]->get_num_dofs(), refSpaces[step - 1]->get_num_dofs(), err_est_rel);
 
-    adaptivity->adapt(selector, THRESHOLD, STRATEGY, MESH_REGULARITY);
-    info("new space: %d", spaces[step]->get_num_dofs());
+//    adaptivity->adapt(selector, THRESHOLD, STRATEGY, MESH_REGULARITY);
+//    info("new space: %d", spaces[step]->get_num_dofs());
 
-    // Clean up.
-    delete [] coeff_vec;
-    delete adaptivity;
-}
+//    // Clean up.
+//    delete [] coeff_vec;
+//    delete adaptivity;
+//}
 
-int main(int argc, char* argv[])
-{
+//int main(int argc, char* argv[])
+//{
 
-  // Load the mesh.
-  Hermes::Hermes2D::Mesh mesh;
-  Hermes::Hermes2D::MeshReaderH2DXML mloader;
-  mloader.load("aa-electrostatic-ctverec-triangle-linear.xml", &mesh);
+//  // Load the mesh.
+//  Hermes::Hermes2D::Mesh mesh;
+//  Hermes::Hermes2D::MeshReaderH2DXML mloader;
+//  mloader.load("aa-electrostatic-ctverec-triangle-linear.xml", &mesh);
 
-  // Perform initial mesh refinements (optional).
-  for (int i = 0; i < INIT_REF_NUM; i++)
-    mesh.refine_all_elements();
+//  // Perform initial mesh refinements (optional).
+//  for (int i = 0; i < INIT_REF_NUM; i++)
+//    mesh.refine_all_elements();
 
-  // Initialize the weak formulation.
-  CustomWeakFormPoisson wf("0", new Hermes::Hermes1DFunction<double>(PERM_AIR));
+//  // Initialize the weak formulation.
+//  CustomWeakFormPoisson wf("0", new Hermes::Hermes1DFunction<double>(PERM_AIR));
 
-  // Initialize essential boundary conditions.
-  Hermes::Hermes2D::DefaultEssentialBCConst<double> bc_essential_outer(Hermes::vector<std::string>("1", "2", "3", "4"),
-    POTENTIAL0);
-  Hermes::Hermes2D::DefaultEssentialBCConst<double> bc_essential_inner(Hermes::vector<std::string>("5", "6", "7", "8"),
-    POTENTIAL1);
-  Hermes::Hermes2D::EssentialBCs<double> bcs(Hermes::vector<Hermes::Hermes2D::EssentialBoundaryCondition<double>* >(&bc_essential_inner, &bc_essential_outer));
+//  // Initialize essential boundary conditions.
+//  Hermes::Hermes2D::DefaultEssentialBCConst<double> bc_essential_outer(Hermes::vector<std::string>("1", "2", "3", "4"),
+//    POTENTIAL0);
+//  Hermes::Hermes2D::DefaultEssentialBCConst<double> bc_essential_inner(Hermes::vector<std::string>("5", "6", "7", "8"),
+//    POTENTIAL1);
+//  Hermes::Hermes2D::EssentialBCs<double> bcs(Hermes::vector<Hermes::Hermes2D::EssentialBoundaryCondition<double>* >(&bc_essential_inner, &bc_essential_outer));
 
 
-  Selector<double>* selector = new H1ProjBasedSelector<double>(H2D_HP_ANISO, CONV_EXP, H2DRS_DEFAULT_ORDER);
-  //Selector<double>* selector = new H1ProjBasedSelector<double>(H2D_H_ANISO, CONV_EXP, H2DRS_DEFAULT_ORDER);
-  //Selector<double>* selector = new HOnlySelector<double>();
+//  Selector<double>* selector = new H1ProjBasedSelector<double>(H2D_HP_ANISO, CONV_EXP, H2DRS_DEFAULT_ORDER);
+//  //Selector<double>* selector = new H1ProjBasedSelector<double>(H2D_H_ANISO, CONV_EXP, H2DRS_DEFAULT_ORDER);
+//  //Selector<double>* selector = new HOnlySelector<double>();
 
-  // Create an H1 space with default shapeset.
-  spaces[0] = new H1Space<double>(&mesh, &bcs, P_INIT);
-  solutions[0] = new Solution<double>(&mesh);
-  int ndof = spaces[0]->get_num_dofs();
-  info("ndof = %d", ndof);
-
-  for(int step = 1; step <= STEPS; step++)
-  {
-      adaptiveStep(step, &wf, selector);
-  }
+//  // Create an H1 space with default shapeset.
+//  spaces[0] = new H1Space<double>(&mesh, &bcs, P_INIT);
+//  solutions[0] = new Solution<double>(&mesh);
+//  int ndof = spaces[0]->get_num_dofs();
+//  info("ndof = %d", ndof);
 
 //  for(int step = 1; step <= STEPS; step++)
 //  {
-//      order_view.show(refSpaces[step - 1]);
-//      view.show(refSolutions[step-1], Views::HERMES_EPS_HIGH);
-//      order_view.wait_for_keypress();
+//      adaptiveStep(step, &wf, selector);
 //  }
 
-  view.show(solutions[9]);
-  view2.show(refSolutions[0]);
+////  for(int step = 1; step <= STEPS; step++)
+////  {
+////      order_view.show(refSpaces[step - 1]);
+////      view.show(refSolutions[step-1], Views::HERMES_EPS_HIGH);
+////      order_view.wait_for_keypress();
+////  }
 
-  view.wait_for_keypress();
+//  view.show(solutions[9]);
+//  view2.show(refSolutions[0]);
 
-//  Hermes::Hermes2D::Views::ScalarView view("Solution", new Hermes::Hermes2D::Views::WinGeom(0, 0, 440, 350));
-//  view.show(&sln, Hermes::Hermes2D::Views::HERMES_EPS_HIGH);
-//  Hermes::Hermes2D::Views::View::wait();
+//  view.wait_for_keypress();
+
+////  Hermes::Hermes2D::Views::ScalarView view("Solution", new Hermes::Hermes2D::Views::WinGeom(0, 0, 440, 350));
+////  view.show(&sln, Hermes::Hermes2D::Views::HERMES_EPS_HIGH);
+////  Hermes::Hermes2D::Views::View::wait();
 
 
-  return 0;
+//  return 0;
 }
 

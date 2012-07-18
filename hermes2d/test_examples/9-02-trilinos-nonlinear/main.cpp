@@ -53,10 +53,6 @@ int max_iters = 100;                              // Max number of iterations.
 
 int main(int argc, char* argv[])
 {
-  // Time measurement.
-  TimePeriod cpu_time;
-  cpu_time.tick();
-
   // Load the mesh.
   Mesh mesh;
   MeshReaderH2D mloader;
@@ -71,35 +67,18 @@ int main(int argc, char* argv[])
   EssentialBCs<double> bcs(&bc);
 
   // Create an H1 space with default shapeset.
-  H1Space<double> space(&mesh, &bcs, P_INIT);
-  int ndof = Space<double>::get_num_dofs(&space);
-  info("ndof: %d", ndof);
-
-  info("Assembling by DiscreteProblem, solving by Umfpack:");
-
-  // Time measurement.
-  cpu_time.tick(HERMES_SKIP);
+  H1Space<double> space1(&mesh, &bcs, P_INIT);
+  H1Space<double> space2(&mesh, &bcs, P_INIT);
+  int ndof = Space<double>::get_num_dofs(&space1);
 
   // Initialize weak formulation,
   CustomWeakForm wf1;
 
   // Initialize the discrete problem.
-  DiscreteProblem<double> dp1(&wf1, &space);
-
-  // Set up the solver, matrix, and rhs for the coarse mesh according to the solver selection.
-  SparseMatrix<double>* matrix = create_matrix<double>(matrix_solver_type);
-  Vector<double>* rhs = create_vector<double>(matrix_solver_type);
-  LinearMatrixSolver<double>* solver = create_linear_solver<double>(matrix_solver_type, matrix, rhs);
+  DiscreteProblem<double> dp1(&wf1, &space1);
 
   // Initialize the solution.
   Solution<double> sln1;
-
-  if (matrix_solver_type == SOLVER_AZTECOO)
-  {
-    (dynamic_cast<AztecOOSolver<double>*>(solver))->set_solver(iterative_method);
-    (dynamic_cast<AztecOOSolver<double>*>(solver))->set_precond(preconditioner);
-    // Using default iteration parameters (see solver/aztecoo.h).
-  }
 
   // Project the initial condition on the FE space to obtain initial
   // coefficient vector for the Newton's method.
@@ -108,37 +87,25 @@ int main(int argc, char* argv[])
   memset(coeff_vec, 0, ndof * sizeof(double));
   // Or we can project the initial condition to obtain the initial
   // coefficient vector.
-  //info("Projecting to obtain initial vector for the Newton's method.");
-  //CustomInitialSolution sln_tmp(&mesh);
-  //OGProjection::project_global(&space, &sln_tmp, coeff_vec, matrix_solver);
+  ////CustomInitialSolution sln_tmp(&mesh);
+  //OGProjection::project_global(&space, &sln_tmp, coeff_vec);
 
   // Perform Newton's iteration and translate the resulting coefficient vector into a Solution.
   Hermes::Hermes2D::Solution<double> sln;
-  Hermes::Hermes2D::NewtonSolver<double> newton(&dp1, matrix_solver_type);
+  Hermes::Hermes2D::NewtonSolver<double> newton(&dp1);
   newton.set_verbose_output(true);
-  try{
+  try
+  {
     newton.solve(coeff_vec);
   }
-  catch(Hermes::Exceptions::Exception e)
+  catch(Hermes::Exceptions::Exception& e)
   {
     e.printMsg();
-    error("Newton's iteration failed.");
   }
-  Hermes::Hermes2D::Solution<double>::vector_to_solution(newton.get_sln_vector(), &space, &sln);
+  Hermes::Hermes2D::Solution<double>::vector_to_solution(newton.get_sln_vector(), &space1, &sln);
 
   // Translate the resulting coefficient vector into the Solution sln1.
-  Solution<double>::vector_to_solution(coeff_vec, &space, &sln1);
-
-  // Cleanup.
-  delete(matrix);
-  delete(rhs);
-  delete(solver);
-
-  // CPU time needed by UMFpack
-  double time1 = cpu_time.tick().last();
-
-  // Time measurement.
-  cpu_time.tick(HERMES_SKIP);
+  Solution<double>::vector_to_solution(coeff_vec, &space1, &sln1);
 
   // Show UMFPACK solution.
   Views::ScalarView view1("Solution 1", new Views::WinGeom(0, 0, 500, 400));
@@ -147,27 +114,22 @@ int main(int argc, char* argv[])
   // Calculate error.
   CustomExactSolution ex(&mesh);
   double rel_err_1 = Global<double>::calc_rel_error(&sln1, &ex, HERMES_H1_NORM) * 100;
-  info("Solution 1 (%s):  exact H1 error: %g%% (time %g s)", MatrixSolverNames[matrix_solver_type].c_str(), rel_err_1, time1);
 
   // TRILINOS PART:
 
   // Project the initial condition to obtain the initial
   // coefficient vector.
-  info("Projecting to obtain initial vector for the Newton's method.");
   ZeroSolution<double> sln_tmp(&mesh);
-  OGProjection<double>::project_global(&space, &sln_tmp, coeff_vec, matrix_solver_type);
-
-  // Measure the projection time.
-  double proj_time = cpu_time.tick().last();
+  OGProjection<double> ogProjection;
+  ogProjection.project_global(&space2, &sln_tmp, coeff_vec);
 
   // Initialize the weak formulation for Trilinos.
   CustomWeakForm wf2(JFNK, PRECOND == 1, PRECOND == 2);
 
   // Initialize DiscreteProblem.
-  DiscreteProblem<double> dp2(&wf2, &space);
+  DiscreteProblem<double> dp2(&wf2, &space2);
 
   // Initialize the NOX solver with the vector "coeff_vec".
-  info("Initializing NOX.");
   NewtonSolverNOX<double> nox_solver(&dp2);
   nox_solver.set_output_flags(message_type);
   nox_solver.set_ls_tolerance(ls_tolerance);
@@ -176,35 +138,25 @@ int main(int argc, char* argv[])
 
   // Choose preconditioning.
   MlPrecond<double> pc("sa");
-  if (PRECOND)
+  if(PRECOND)
   {
-    if (JFNK) nox_solver.set_precond(pc);
+    if(JFNK) nox_solver.set_precond(pc);
     else nox_solver.set_precond("ML");
   }
 
   // Solve the nonlinear problem using NOX.
-  info("Assembling by DiscreteProblem, solving by NOX.");
   Solution<double> sln2;
   try{
     nox_solver.solve(coeff_vec);
   }
-  catch(Hermes::Exceptions::Exception e)
+  catch(Hermes::Exceptions::Exception& e)
   {
     e.printMsg();
-    error("NOX failed.");
   }
-  Solution<double>::vector_to_solution(nox_solver.get_sln_vector(), &space, &sln2);
-  info("Number of nonlin iterations: %d (norm of residual: %g)",
-       nox_solver.get_num_iters(), nox_solver.get_residual());
-  info("Total number of iterations in linsolver: %d (achieved tolerance in the last step: %g)",
-       nox_solver.get_num_lin_iters(), nox_solver.get_achieved_tol());
-
-  // CPU time needed by NOX.
-  double time2 = cpu_time.tick().last();
+  Solution<double>::vector_to_solution(nox_solver.get_sln_vector(), &space2, &sln2);
 
   // Calculate error.
   double rel_err_2 = Global<double>::calc_rel_error(&sln2, &ex, HERMES_H1_NORM) * 100;
-  info("Solution 2 (NOX): exact H1 error: %g%% (time %g + %g = %g [s])", rel_err_2, proj_time, time2, proj_time + time2);
 
   // Show NOX solution.
   Views::ScalarView view2("Solution 2", new Views::WinGeom(510, 0, 500, 400));

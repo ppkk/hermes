@@ -65,20 +65,21 @@ namespace Hermes
 
         int add_vertex();
 
+        double cmax;
+
         void add_dash(int iv1, int iv2);
 
         void push_transform(int son);
 
         void pop_transform();
 
-        void process_triangle(int iv0, int iv1, int iv2, int level,
-          double* xval, double* yval, double* phx, double* phy, int* indices);
+        void process_triangle(MeshFunction<double>** fns, int iv0, int iv1, int iv2, int level,
+          double* xval, double* yval, double* phx, double* phy, int* indices, bool curved);
 
-        void process_quad(int iv0, int iv1, int iv2, int iv3, int level,
-          double* xval, double* yval, double* phx, double* phy, int* indices);
+        void process_quad(MeshFunction<double>** fns, int iv0, int iv1, int iv2, int iv3, int level,
+          double* xval, double* yval, double* phx, double* phy, int* indices, bool curved);
 
         void find_min_max();
-
       };
     }
   }

@@ -29,13 +29,11 @@ namespace Hermes
     }
 
     template<typename Scalar>
-    MeshFunction<Scalar>::MeshFunction(Mesh *mesh) :
+    MeshFunction<Scalar>::MeshFunction(const Mesh *mesh) :
     Function<Scalar>()
     {
       this->mesh = mesh;
       this->refmap = new RefMap;
-      // FIXME - this was in H3D: MEM_CHECK(this->refmap);
-      this->element = NULL;		// this comes with Transformable
     }
 
     template<typename Scalar>
@@ -70,27 +68,32 @@ namespace Hermes
     }
 
     template<typename Scalar>
-    Mesh* MeshFunction<Scalar>::get_mesh() const
+    const Mesh* MeshFunction<Scalar>::get_mesh() const
     {
       return mesh;
     }
 
     template<typename Scalar>
-    RefMap* MeshFunction<Scalar>::get_refmap()
+    RefMap* MeshFunction<Scalar>::get_refmap(bool update)
     {
-      this->update_refmap();
+      if(update)
+        this->update_refmap();
       return refmap;
+    }
+
+    template<typename Scalar>
+    void MeshFunction<Scalar>::set_refmap(RefMap* refmap_to_set)
+    {
+      this->refmap = refmap_to_set;
     }
 
     template<typename Scalar>
     void MeshFunction<Scalar>::set_quad_2d(Quad2D* quad_2d)
     {
-      _F_
-      if (quad_2d==NULL) throw Exceptions::NullException(1);
+      if(quad_2d==NULL) throw Exceptions::NullException(1);
       Function<Scalar>::set_quad_2d(quad_2d);
       refmap->set_quad_2d(quad_2d);
     }
-
 
     template<typename Scalar>
     void MeshFunction<Scalar>::set_active_element(Element* e)

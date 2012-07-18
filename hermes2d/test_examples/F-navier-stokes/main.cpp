@@ -104,149 +104,159 @@ double current_time = 0;
 
 int main(int argc, char* argv[])
 {
-    // MOJE - zmenit i boundary markery
-  // Load the mesh.
-  Mesh mesh;
-  Hermes::vector<Hermes::Hermes2D::Mesh*> meshes;
-  meshes.push_back(&mesh);
-  MeshReaderH2DXML mloader;
-  mloader.load("mesh_agros_quad.xml", meshes);
+//    // MOJE - zmenit i boundary markery
+//  // Load the mesh.
+//  Mesh mesh;
+//  Hermes::vector<Hermes::Hermes2D::Mesh*> meshes;
+//  meshes.push_back(&mesh);
+//  MeshReaderH2DXML mloader;
+//  mloader.load("mesh_agros_quad.xml", meshes);
 
-  //mesh.refine_all_elements();
+//  //mesh.refine_all_elements();
 
-  // Initialize boundary conditions.
-  //EssentialBCNonConst bc_left_vel_x(BDY_LEFT, VEL_INLET, H, STARTUP_TIME);
-  Hermes::Hermes2D::DefaultEssentialBCConst<double> bc_left_vel_x(BDY_LEFT, 1.0);
-  Hermes::Hermes2D::DefaultEssentialBCConst<double> bc_other_vel_x(Hermes::vector<std::string>(BDY_BOTTOM, BDY_TOP, BDY_OBSTACLE), 0.0);
-  Hermes::Hermes2D::EssentialBCs<double> bcs_vel_x(Hermes::vector<EssentialBoundaryCondition<double> *>(&bc_left_vel_x, &bc_other_vel_x));
-  Hermes::Hermes2D::DefaultEssentialBCConst<double> bc_vel_y(Hermes::vector<std::string>(BDY_LEFT, BDY_BOTTOM, BDY_TOP, BDY_OBSTACLE), 0.0);
-  Hermes::Hermes2D::EssentialBCs<double> bcs_vel_y(&bc_vel_y);
-  Hermes::Hermes2D::EssentialBCs<double> bcs_pressure;
-  // Initial mesh refinements.
-//  mesh.refine_towards_boundary(BDY_OBSTACLE_1, 1, false);
-//  mesh.refine_towards_boundary(BDY_OBSTACLE_2, 1, false);
-//  mesh.refine_towards_boundary(BDY_OBSTACLE_3, 1, false);
-//  mesh.refine_towards_boundary(BDY_OBSTACLE_4, 1, false);
-//  mesh.refine_towards_boundary(BDY_TOP, 1, true);     // '4' is the number of levels,
-//  mesh.refine_towards_boundary(BDY_BOTTOM, 1, true);  // 'true' stands for anisotropic refinements.
+//  // Initialize boundary conditions.
+//  //EssentialBCNonConst bc_left_vel_x(BDY_LEFT, VEL_INLET, H, STARTUP_TIME);
+//  Hermes::Hermes2D::DefaultEssentialBCConst<double> bc_left_vel_x(BDY_LEFT, 1.0);
+//  Hermes::Hermes2D::DefaultEssentialBCConst<double> bc_other_vel_x(Hermes::vector<std::string>(BDY_BOTTOM, BDY_TOP, BDY_OBSTACLE), 0.0);
+//  Hermes::Hermes2D::EssentialBCs<double> bcs_vel_x(Hermes::vector<EssentialBoundaryCondition<double> *>(&bc_left_vel_x, &bc_other_vel_x));
+//  Hermes::Hermes2D::DefaultEssentialBCConst<double> bc_vel_y(Hermes::vector<std::string>(BDY_LEFT, BDY_BOTTOM, BDY_TOP, BDY_OBSTACLE), 0.0);
+//  Hermes::Hermes2D::EssentialBCs<double> bcs_vel_y(&bc_vel_y);
+//  Hermes::Hermes2D::EssentialBCs<double> bcs_pressure;
+//  // Initial mesh refinements.
+////  mesh.refine_towards_boundary(BDY_OBSTACLE_1, 1, false);
+////  mesh.refine_towards_boundary(BDY_OBSTACLE_2, 1, false);
+////  mesh.refine_towards_boundary(BDY_OBSTACLE_3, 1, false);
+////  mesh.refine_towards_boundary(BDY_OBSTACLE_4, 1, false);
+////  mesh.refine_towards_boundary(BDY_TOP, 1, true);     // '4' is the number of levels,
+////  mesh.refine_towards_boundary(BDY_BOTTOM, 1, true);  // 'true' stands for anisotropic refinements.
 
 
-//    // Load the mesh.
-//    Mesh mesh;
-//    MeshReaderH2D mloader;
-//    mloader.load("domain.mesh", &mesh);
+////    // Load the mesh.
+////    Mesh mesh;
+////    MeshReaderH2D mloader;
+////    mloader.load("domain.mesh", &mesh);
 
-//    // Initial mesh refinements.
-//    mesh.refine_towards_boundary(BDY_OBSTACLE, 1, false);
-//    mesh.refine_towards_boundary(BDY_TOP, 1, true);     // '4' is the number of levels,
-//    mesh.refine_towards_boundary(BDY_BOTTOM, 1, true);  // 'true' stands for anisotropic refinements.
+////    // Initial mesh refinements.
+////    mesh.refine_towards_boundary(BDY_OBSTACLE, 1, false);
+////    mesh.refine_towards_boundary(BDY_TOP, 1, true);     // '4' is the number of levels,
+////    mesh.refine_towards_boundary(BDY_BOTTOM, 1, true);  // 'true' stands for anisotropic refinements.
 
-//    // Initialize boundary conditions.
-//    EssentialBCNonConst bc_left_vel_x(BDY_LEFT, VEL_INLET, H, STARTUP_TIME);
-//    Hermes::Hermes2D::DefaultEssentialBCConst<double> bc_other_vel_x(Hermes::vector<std::string>(BDY_BOTTOM, BDY_TOP, BDY_OBSTACLE), 0.0);
-//    Hermes::Hermes2D::EssentialBCs<double> bcs_vel_x(Hermes::vector<EssentialBoundaryCondition<double> *>(&bc_left_vel_x, &bc_other_vel_x));
-//    Hermes::Hermes2D::DefaultEssentialBCConst<double> bc_vel_y(Hermes::vector<std::string>(BDY_LEFT, BDY_BOTTOM, BDY_TOP, BDY_OBSTACLE), 0.0);
-//    Hermes::Hermes2D::EssentialBCs<double> bcs_vel_y(&bc_vel_y);
-//    Hermes::Hermes2D::EssentialBCs<double> bcs_pressure;
+////    // Initialize boundary conditions.
+////    EssentialBCNonConst bc_left_vel_x(BDY_LEFT, VEL_INLET, H, STARTUP_TIME);
+////    Hermes::Hermes2D::DefaultEssentialBCConst<double> bc_other_vel_x(Hermes::vector<std::string>(BDY_BOTTOM, BDY_TOP, BDY_OBSTACLE), 0.0);
+////    Hermes::Hermes2D::EssentialBCs<double> bcs_vel_x(Hermes::vector<EssentialBoundaryCondition<double> *>(&bc_left_vel_x, &bc_other_vel_x));
+////    Hermes::Hermes2D::DefaultEssentialBCConst<double> bc_vel_y(Hermes::vector<std::string>(BDY_LEFT, BDY_BOTTOM, BDY_TOP, BDY_OBSTACLE), 0.0);
+////    Hermes::Hermes2D::EssentialBCs<double> bcs_vel_y(&bc_vel_y);
+////    Hermes::Hermes2D::EssentialBCs<double> bcs_pressure;
 
-  // Spaces for velocity components and pressure.
-  H1Space<double> xvel_space(&mesh, &bcs_vel_x, P_INIT_VEL);
-  H1Space<double> yvel_space(&mesh, &bcs_vel_y, P_INIT_VEL);
-#ifdef PRESSURE_IN_L2
-  L2Space<double> p_space(&mesh, P_INIT_PRESSURE);
-#else
-  H1Space<double> p_space(&mesh, &bcs_pressure, P_INIT_PRESSURE);
-#endif
+//  // Spaces for velocity components and pressure.
+//  H1Space<double> xvel_space(&mesh, &bcs_vel_x, P_INIT_VEL);
+//  H1Space<double> yvel_space(&mesh, &bcs_vel_y, P_INIT_VEL);
+//#ifdef PRESSURE_IN_L2
+//  L2Space<double> p_space(&mesh, P_INIT_PRESSURE);
+//#else
+//  H1Space<double> p_space(&mesh, &bcs_pressure, P_INIT_PRESSURE);
+//#endif
 
-  // Calculate and report the number of degrees of freedom.
-  int ndof = Space<double>::get_num_dofs(Hermes::vector<const Space<double> *>(&xvel_space, &yvel_space, &p_space));
-  info("ndof = %d.", ndof);
+//  int ndofsx = Space<double>::get_num_dofs(&xvel_space);
+//  int ndofsy = Space<double>::get_num_dofs(&yvel_space);
+//  int ndofsp = Space<double>::get_num_dofs(&p_space);
+//  printf("xdofs %d, ydofs %d, pdofs %d\n", ndofsx, ndofsy, ndofsp);
+//  // Calculate and report the number of degrees of freedom.
+//  int ndof = Space<double>::get_num_dofs(Hermes::vector<const Space<double> *>(&xvel_space, &yvel_space, &p_space));
+//  info("ndof = %d.", ndof);
 
-  // Define projection norms.
-  ProjNormType vel_proj_norm = HERMES_H1_NORM;
-#ifdef PRESSURE_IN_L2
-  ProjNormType p_proj_norm = HERMES_L2_NORM;
-#else
-  ProjNormType p_proj_norm = HERMES_H1_NORM;
-#endif
+//  // Define projection norms.
+//  ProjNormType vel_proj_norm = HERMES_H1_NORM;
+//#ifdef PRESSURE_IN_L2
+//  ProjNormType p_proj_norm = HERMES_L2_NORM;
+//#else
+//  ProjNormType p_proj_norm = HERMES_H1_NORM;
+//#endif
 
-  // Solutions for the Newton's iteration and time stepping.
-  info("Setting initial conditions.");
-  ZeroSolution<double> xvel_prev_time(&mesh), yvel_prev_time(&mesh), p_prev_time(&mesh);
+//  // Solutions for the Newton's iteration and time stepping.
+//  info("Setting initial conditions.");
+//  ZeroSolution<double> xvel_prev_time(&mesh), yvel_prev_time(&mesh), p_prev_time(&mesh);
 
-  // Initialize weak formulation.
-  WeakForm<double>* wf;
-  wf = new WeakFormNSNewton(STOKES, TRANSIENT, RE, TAU, &xvel_prev_time, &yvel_prev_time);
+//  // Initialize weak formulation.
+//  WeakForm<double>* wf;
+//  wf = new WeakFormNSNewton(STOKES, TRANSIENT, RE, TAU, &xvel_prev_time, &yvel_prev_time);
 
-  // Initialize the FE problem.
-  DiscreteProblem<double> dp(wf, Hermes::vector<const Space<double> *>(&xvel_space, &yvel_space, &p_space));
+//  // Initialize the FE problem.
+//  DiscreteProblem<double> dp(wf, Hermes::vector<const Space<double> *>(&xvel_space, &yvel_space, &p_space));
 
-  // Initialize the Newton solver.
-  Hermes::Hermes2D::NewtonSolver<double> newton(&dp, matrix_solver_type);
+//  // Initialize the Newton solver.
+//  Hermes::Hermes2D::NewtonSolver<double> newton(&dp, matrix_solver_type);
 
-  // Initialize views.
-  Views::VectorView vview("velocity [m/s]", new Views::WinGeom(0, 0, 750, 240));
-  Views::ScalarView pview("pressure [Pa]", new Views::WinGeom(0, 290, 750, 240));
-  vview.set_min_max_range(0, 1.6);
-  vview.fix_scale_width(80);
-  //pview.set_min_max_range(-0.9, 1.0);
-  pview.fix_scale_width(80);
-  pview.show_mesh(true);
+//  // Initialize views.
+//  Views::VectorView vview("velocity [m/s]", new Views::WinGeom(0, 0, 750, 240));
+//  Views::ScalarView pview("pressure [Pa]", new Views::WinGeom(0, 290, 750, 240));
+//  vview.set_min_max_range(0, 1.6);
+//  vview.fix_scale_width(80);
+//  //pview.set_min_max_range(-0.9, 1.0);
+//  pview.fix_scale_width(80);
+//  pview.show_mesh(true);
 
-  // Project the initial condition on the FE space to obtain initial
-  // coefficient vector for the Newton's method.
-  double* coeff_vec = new double[Space<double>::get_num_dofs(Hermes::vector<const Space<double> *>(&xvel_space, &yvel_space, &p_space))];
-  info("Projecting initial condition to obtain initial vector for the Newton's method.");
-  OGProjection<double>::project_global(Hermes::vector<const Space<double> *>(&xvel_space, &yvel_space, &p_space),
-    Hermes::vector<MeshFunction<double> *>(&xvel_prev_time, &yvel_prev_time, &p_prev_time),
-    coeff_vec, matrix_solver_type,
-    Hermes::vector<ProjNormType>(vel_proj_norm, vel_proj_norm, p_proj_norm));
+//  // Project the initial condition on the FE space to obtain initial
+//  // coefficient vector for the Newton's method.
+//  double* coeff_vec = new double[Space<double>::get_num_dofs(Hermes::vector<const Space<double> *>(&xvel_space, &yvel_space, &p_space))];
+//  info("Projecting initial condition to obtain initial vector for the Newton's method.");
+//  OGProjection<double>::project_global(Hermes::vector<const Space<double> *>(&xvel_space, &yvel_space, &p_space),
+//    Hermes::vector<MeshFunction<double> *>(&xvel_prev_time, &yvel_prev_time, &p_prev_time),
+//    coeff_vec, matrix_solver_type,
+//    Hermes::vector<ProjNormType>(vel_proj_norm, vel_proj_norm, p_proj_norm));
 
-  memset(coeff_vec, 0., Space<double>::get_num_dofs(Hermes::vector<const Space<double> *>(&xvel_space, &yvel_space, &p_space))*sizeof(double));
+////  for(unsigned int i = 0; i <  ndof; i++)
+////    if(coeff_vec[i] != 0.0)
+////    {
+////      std::cout << i << ':' << coeff_vec[i] << std::endl;
+////      exit;
+////    }
+//  //memset(coeff_vec, 0., Space<double>::get_num_dofs(Hermes::vector<const Space<double> *>(&xvel_space, &yvel_space, &p_space))*sizeof(double));
 
-  // Time-stepping loop:
-  char title[100];
-  int num_time_steps = T_FINAL / TAU;
-  for (int ts = 1; ts <= 1/*num_time_steps*/; ts++)
-  {
-    current_time += TAU;
-    info("---- Time step %d, time = %g:", ts, current_time);
+//  // Time-stepping loop:
+//  char title[100];
+//  int num_time_steps = T_FINAL / TAU;
+//  for (int ts = 1; ts <= num_time_steps; ts++)
+//  {
+//    current_time += TAU;
+//    info("---- Time step %d, time = %g:", ts, current_time);
 
-    // Update time-dependent essential BCs.
-    if (current_time <= STARTUP_TIME)
-    {
-      info("Updating time-dependent essential BC.");
-      Space<double>::update_essential_bc_values(Hermes::vector<Space<double> *>(&xvel_space, &yvel_space, &p_space), current_time);
-    }
+//    // Update time-dependent essential BCs.
+//    if (current_time <= STARTUP_TIME)
+//    {
+//      info("Updating time-dependent essential BC.");
+//      Space<double>::update_essential_bc_values(Hermes::vector<Space<double> *>(&xvel_space, &yvel_space, &p_space), current_time);
+//    }
 
-    // Perform Newton's iteration.
-    info("Solving nonlinear problem using %i threads:", Global<double>::Hermes_omp_get_max_threads());
-    bool verbose = true;
-    // Perform Newton's iteration and translate the resulting coefficient vector into previous time level solutions.
-    newton.set_verbose_output(verbose);
-    try{
-      newton.solve(coeff_vec, NEWTON_TOL, NEWTON_MAX_ITER);
-    }
-    catch(Hermes::Exceptions::Exception e)
-    {
-      e.printMsg();
-      error("Newton's iteration failed.");
-    }
-    Hermes::vector<Solution<double> *> tmp(&xvel_prev_time, &yvel_prev_time, &p_prev_time);
-    Hermes::Hermes2D::Solution<double>::vector_to_solutions(newton.get_sln_vector(), Hermes::vector<const Space<double> *>(&xvel_space, &yvel_space, &p_space), tmp);
+//    // Perform Newton's iteration.
+//    info("Solving nonlinear problem using %i threads:", Global<double>::Hermes_omp_get_max_threads());
+//    bool verbose = true;
+//    // Perform Newton's iteration and translate the resulting coefficient vector into previous time level solutions.
+//    newton.set_verbose_output(verbose);
+//    try{
+//      newton.solve(coeff_vec, NEWTON_TOL, NEWTON_MAX_ITER);
+//    }
+//    catch(Hermes::Exceptions::Exception e)
+//    {
+//      e.printMsg();
+//      error("Newton's iteration failed.");
+//    }
+//    Hermes::vector<Solution<double> *> tmp(&xvel_prev_time, &yvel_prev_time, &p_prev_time);
+//    Hermes::Hermes2D::Solution<double>::vector_to_solutions(newton.get_sln_vector(), Hermes::vector<const Space<double> *>(&xvel_space, &yvel_space, &p_space), tmp);
 
-    // Show the solution at the end of time step.
-    sprintf(title, "Velocity, time %g", current_time);
-    vview.set_title(title);
-    vview.show(&xvel_prev_time, &yvel_prev_time, Views::HERMES_EPS_LOW);
-    sprintf(title, "Pressure, time %g", current_time);
-    pview.set_title(title);
-    pview.show(&p_prev_time);
-  }
+//    // Show the solution at the end of time step.
+//    sprintf(title, "Velocity, time %g", current_time);
+//    vview.set_title(title);
+//    vview.show(&xvel_prev_time, &yvel_prev_time, Views::HERMES_EPS_LOW);
+//    sprintf(title, "Pressure, time %g", current_time);
+//    pview.set_title(title);
+//    pview.show(&p_prev_time);
+//  }
 
-  delete [] coeff_vec;
+//  delete [] coeff_vec;
 
-  // Wait for all views to be closed.
-  Views::View::wait();
-  return 0;
+//  // Wait for all views to be closed.
+//  Views::View::wait();
+//  return 0;
 }
