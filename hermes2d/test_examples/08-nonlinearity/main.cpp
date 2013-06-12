@@ -1,9 +1,4 @@
-#define HERMES_REPORT_ALL
-#define HERMES_REPORT_FILE "application.log"
 #include "definitions.h"
-#include "function/function.h"
-
-using namespace RefinementSelectors;
 
 //  This example solves the same nonlinear problem as the previous
 //  one but now using the Newton's method.
@@ -32,10 +27,12 @@ const int INIT_BDY_REF_NUM = 4;
 
 // Problem parameters.
 double heat_src = 1.0;
-double alpha = 7.0;
+double alpha = 8.0;
 
 int main(int argc, char* argv[])
 {
+#pragma region initialization
+
   // Load the mesh.
   MeshSharedPtr mesh(new Mesh);
   MeshReaderH2D mloader;
@@ -71,18 +68,21 @@ int main(int argc, char* argv[])
   MeshFunctionSharedPtr<double> init_sln(new CustomInitialCondition(mesh));
   OGProjection<double> ogProjection; ogProjection.project_global(space, init_sln, coeff_vec); 
 
+#pragma endregion
+
   // Initialize Newton solver.
   NewtonSolver<double> newton(&dp);
-  newton.set_tolerance(NEWTON_TOL);
+  newton.set_convergence_measurement(SolutionDistanceFromPreviousRelative);
+  newton.set_tolerance(1e-2);
+  newton.set_min_allowed_damping_coeff(1e-10);
   newton.set_max_allowed_residual_norm(1e99);
-  newton.set_max_allowed_iterations(NEWTON_MAX_ITER);
+  newton.set_max_allowed_iterations(100);
   
   // 1st - OK
-  newton.set_sufficient_improvement_factor_jacobian(0.5);
-  newton.set_max_steps_with_reused_jacobian(5);
-  newton.set_initial_auto_damping_coeff(0.95);
+  newton.set_sufficient_improvement_factor_jacobian(0.1);
+  newton.set_max_steps_with_reused_jacobian(99);
+  newton.set_initial_auto_damping_coeff(.5);
   newton.set_sufficient_improvement_factor(1.1);
-  newton.set_min_allowed_damping_coeff(1e-10);
 
   // 2nd - OK
   // newton.set_sufficient_improvement_factor_jacobian(0.9);
@@ -110,6 +110,8 @@ int main(int argc, char* argv[])
     }
   }
   
+#pragma region finalization
+
   catch(std::exception& e)
   {
     std::cout << e.what();
@@ -118,9 +120,6 @@ int main(int argc, char* argv[])
   // Translate the resulting coefficient vector into a Solution.
   MeshFunctionSharedPtr<double> sln(new Solution<double>);
   Solution<double>::vector_to_solution(newton.get_sln_vector(), space, sln);
-
-  // Get info about time spent during assembling in its respective parts.
-  //dp.get_all_profiling_output(std::cout);
 
   // Clean up.
   delete [] coeff_vec;
@@ -135,5 +134,7 @@ int main(int argc, char* argv[])
   // Wait for all views to be closed.
   View::wait();
   return 0;
+
+#pragma endregion
 }
 
