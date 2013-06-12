@@ -259,7 +259,7 @@ namespace Hermes
       // For derived classes - read-only access.
       const OutputParameterDoubleVector& residual_norms() const { return this->p_residual_norms; };
       const OutputParameterDoubleVector& solution_norms() const { return this->p_solution_norms; };
-      const OutputParameterDouble& solution_change_norm() const { return this->p_solution_change_norm; };
+      const OutputParameterDoubleVector& solution_change_norms() const { return this->p_solution_change_norms; };
       const OutputParameterUnsignedInt& successful_steps_damping() const { return this->p_successful_steps_damping; };
       const OutputParameterUnsignedInt& successful_steps_jacobian() const { return this->p_successful_steps_jacobian; };
       
@@ -271,7 +271,7 @@ namespace Hermes
       // Parameters for OutputAttachable mixin.
       OutputParameterDoubleVector p_residual_norms;
       OutputParameterDoubleVector p_solution_norms;
-      OutputParameterDouble p_solution_change_norm;
+      OutputParameterDoubleVector p_solution_change_norms;
       OutputParameterUnsignedInt p_successful_steps_damping;
       OutputParameterUnsignedInt p_successful_steps_jacobian;
       OutputParameterDoubleVector p_damping_coefficients;

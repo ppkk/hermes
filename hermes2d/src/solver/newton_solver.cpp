@@ -480,7 +480,12 @@ namespace Hermes
 
       double residual_norm = this->calculate_residual_norm();
       // Output.
-      this->info("\tNewton: iteration %d, residual norm: %g", this->get_parameter_value(p_iteration), residual_norm);
+      this->info("\n\tNewton: iteration %d,", this->get_parameter_value(p_iteration));
+      this->info("\t\tresidual norm: %g,", residual_norm);
+      this->info("\t\tsolution norm: %g,", this->get_parameter_value(this->p_solution_norms).back());
+      this->info("\t\tsolution change norm: %g.", this->get_parameter_value(this->p_solution_change_norms).back());
+      if(this->current_convergence_measurement == SolutionDistanceFromPreviousRelative)
+        this->info("\t\trelative solution change: %g.", this->get_parameter_value(this->p_solution_change_norms).back() / this->get_parameter_value(this->p_solution_norms)[this->get_parameter_value(this->p_solution_norms).size() - 2]);
 
       // Output to disk.
       this->process_vector_output(this->residual, this->get_parameter_value(p_iteration));
@@ -526,7 +531,7 @@ namespace Hermes
           Scalar* difference = new Scalar[ndof];
           for(int i = 0; i < ndof; i++)
             difference[i] = coeff_vec[i] - coeff_vec_back[i];
-          this->get_parameter_value(p_solution_change_norm) = current_damping_coefficient * get_l2_norm(difference, ndof);
+          this->get_parameter_value(p_solution_change_norms).push_back(current_damping_coefficient * get_l2_norm(difference, this->ndof));
           delete [] difference;
         }
         else
@@ -539,7 +544,7 @@ namespace Hermes
             coeff_vec[i] += current_damping_coefficient * sln_vector_local[i];
 
           // 2. store the solution change.
-          this->get_parameter_value(p_solution_change_norm) = current_damping_coefficient * get_l2_norm(sln_vector_local, ndof);
+          this->get_parameter_value(p_solution_change_norms).push_back(current_damping_coefficient * get_l2_norm(sln_vector_local, this->ndof));
         }
 
         // 3. store the solution norm.
@@ -565,17 +570,17 @@ namespace Hermes
       unsigned int successful_steps_jacobian = 0;
       Hermes::vector<double> residual_norms;
       Hermes::vector<double> solution_norms;
+      Hermes::vector<double> solution_change_norms;
       Hermes::vector<double> damping_coefficients;
 
       // Initial damping coefficient.
       damping_coefficients.push_back(this->manual_damping ? manual_damping_coefficient : initial_auto_damping_coefficient);
       
-      double solution_change_norm;
       bool residual_norm_drop = true;
 
       this->set_parameter_value(this->p_residual_norms, &residual_norms);
       this->set_parameter_value(this->p_solution_norms, &solution_norms);
-      this->set_parameter_value(this->p_solution_change_norm, &solution_change_norm);
+      this->set_parameter_value(this->p_solution_change_norms, &solution_change_norms);
       this->set_parameter_value(this->p_successful_steps_damping, &successful_steps_damping);
       this->set_parameter_value(this->p_successful_steps_jacobian, &successful_steps_jacobian);
       this->set_parameter_value(this->p_iteration, &it);
@@ -627,6 +632,9 @@ namespace Hermes
             // Delete the previous residual and solution norm.
             residual_norms.pop_back();
             solution_norms.pop_back();
+
+            // Adjust the previous solution change norm.
+            solution_change_norms.back() /= this->auto_damping_ratio;
 
             // Try with the different damping coefficient.
             // Important thing here is the factor used that must be calculated from the current one and the previous one.
