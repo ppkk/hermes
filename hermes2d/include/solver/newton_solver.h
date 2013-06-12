@@ -85,8 +85,8 @@ namespace Hermes
       virtual void solve(Scalar* coeff_vec);
 
       /// Sets the current convergence measurement.
-      /// Default: AbsoluteNorm
-      void set_convergence_measurement(NewtonSolverConvergenceMeasurementType measurement);
+      /// Default: none.
+      void set_convergence_measurement(int measurement);
 
       /// Sets the maximum allowed norm of the residual during the calculation.
       /// Default: 1E9
@@ -102,8 +102,10 @@ namespace Hermes
       void set_residual_as_function();
 
       /// Set the residual norm tolerance for ending the Newton's loop.
-      /// Default: 1E-8.
-      void set_tolerance(double newton_tol);
+      /// Default: none.
+      /// \param[in] handleMultipleTolerancesAnd If true, multiple tolerances defined will have to be all fulfilled in order to proclaim
+      /// solution as a correct one. If false, only one will be enough.
+      void set_tolerance(double newton_tol, NewtonSolverConvergenceMeasurementType toleranceType, bool handleMultipleTolerancesAnd = true);
 
 #pragma region damping-public
       /// Sets minimum damping coefficient.
@@ -213,12 +215,20 @@ namespace Hermes
       /// Calculates the new damping coefficient.
       bool calculate_damping_coefficient(unsigned int& successful_steps);
 
-      NewtonSolverConvergenceMeasurementType current_convergence_measurement;
+      int current_convergence_measurement;
       
       /// Internal setting of default values (see individual set methods).
       void init_newton();
 
-      double newton_tolerance;
+      /// Tolerances for all NewtonSolverConvergenceMeasurementType numbered sequentially as the enum NewtonSolverConvergenceMeasurementType is.
+      double newton_tolerance[NewtonSolverConvergenceMeasurementTypeCount];
+
+      /// info about set tolerances.
+      bool newton_tolerance_set[NewtonSolverConvergenceMeasurementTypeCount];
+
+      /// If true, multiple tolerances defined will have to be all fulfilled in order to proclaim
+      /// solution as a correct one. If false, only one will be enough.
+      bool handleMultipleTolerancesAnd;
 
       /// Maximum allowed residual norm. If this number is exceeded, the methods solve() return 'false'.
       /// By default set to 1E6.

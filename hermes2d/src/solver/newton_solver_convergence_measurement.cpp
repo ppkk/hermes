@@ -53,46 +53,32 @@ namespace Hermes
       double current_solution_norm = solution_norms[iteration - 1];
       double current_solution_change_norm = solution_change_norms[iteration - 2];
 
-      switch(newton->current_convergence_measurement)
+      bool converged;
+      if(newton->handleMultipleTolerancesAnd)
+        converged = true;
+      else
+        converged = false;
+
+      double convergence_decision_value[NewtonSolverConvergenceMeasurementTypeCount];
+      convergence_decision_value[0] = ((initial_residual_norm - current_residual_norm) / initial_residual_norm);
+      convergence_decision_value[1] = ((previous_residual_norm - current_residual_norm) / previous_residual_norm);
+      convergence_decision_value[2] = (current_residual_norm / initial_residual_norm);
+      convergence_decision_value[3] = (current_residual_norm / previous_residual_norm);
+      convergence_decision_value[4] = current_residual_norm;
+      convergence_decision_value[5] = current_solution_change_norm;
+      convergence_decision_value[6] = (current_solution_change_norm / previous_solution_norm);
+
+      for(int i = 0; i < NewtonSolverConvergenceMeasurementTypeCount; i++)
       {
-      case ResidualNormRelativeToInitial:
-        {
-          return ((initial_residual_norm - current_residual_norm) / initial_residual_norm) < newton->newton_tolerance;
-        }
-        break;
-      case ResidualNormRelativeToPrevious:
-        {
-          return ((previous_residual_norm - current_residual_norm) / previous_residual_norm) < newton->newton_tolerance;
-        }
-        break;
-      case ResidualNormRatioToInitial:
-        {
-          return (current_residual_norm / initial_residual_norm) < newton->newton_tolerance;
-        }
-        break;
-      case ResidualNormRatioToPrevious:
-        {
-          return (current_residual_norm / previous_residual_norm) < newton->newton_tolerance;
-        }
-        break;
-      case ResidualNormAbsolute:
-        {
-          return current_residual_norm < newton->newton_tolerance;
-        }
-        break;
-      case SolutionDistanceFromPreviousAbsolute:
-        {
-          return current_solution_change_norm < newton->newton_tolerance;
-        }
-        break;
-      case SolutionDistanceFromPreviousRelative:
-        {
-          return (current_solution_change_norm / previous_solution_norm) < newton->newton_tolerance;
-        }
-        break;
+        bool converged_this_tolerance = (convergence_decision_value[i] < newton->newton_tolerance[i]);
+        if(newton->handleMultipleTolerancesAnd)
+          converged = converged && converged_this_tolerance;
+        else
+          if(converged_this_tolerance)
+            return true;
       }
 
-      return false;
+      return converged;
     }
 
     template class HERMES_API NewtonSolverConvergenceMeasurement<double>;

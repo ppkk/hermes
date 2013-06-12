@@ -51,6 +51,15 @@ namespace Hermes
     template<typename Scalar>
     bool NewtonSolver<Scalar>::isOkay() const
     {
+      bool toleranceSet = false;
+      for(int i = 0; i < NewtonSolverConvergenceMeasurementTypeCount; i++)
+        if(this->newton_tolerance_set[i])
+          toleranceSet = true;
+      if(!toleranceSet)
+      {
+        throw Exceptions::Exception("No tolerance set in NewtonSolver.");
+        return false;
+      }
       return NonlinearSolver<Scalar>::isOkay();
     }
 
@@ -58,8 +67,11 @@ namespace Hermes
     void NewtonSolver<Scalar>::init_newton()
     {
       this->current_convergence_measurement = ResidualNormAbsolute;
-      this->newton_tolerance = 1e-8;
-      this->max_allowed_iterations = 15;
+      for(int i = 0; i < NewtonSolverConvergenceMeasurementTypeCount; i++)
+        this->newton_tolerance[i] = std::numeric_limits<double>::max();
+      memset(this->newton_tolerance_set, 0, sizeof(bool)*NewtonSolverConvergenceMeasurementTypeCount);
+      this->handleMultipleTolerancesAnd = true;
+      this->max_allowed_iterations = 20;
       this->residual_as_function = false;
       this->max_allowed_residual_norm = 1E9;
       this->min_allowed_damping_coeff = 1E-4;
@@ -90,11 +102,58 @@ namespace Hermes
     }
 
     template<typename Scalar>
-    void NewtonSolver<Scalar>::set_tolerance(double tolerance_)
+    void NewtonSolver<Scalar>::set_tolerance(double tolerance_, NewtonSolverConvergenceMeasurementType toleranceType, bool handleMultipleTolerancesAnd)
     {
       if(tolerance_ < 0.0)
-        throw Exceptions::ValueException("newton_tolerance", newton_tolerance, 0.0);
-      this->newton_tolerance = tolerance_;
+        throw Exceptions::ValueException("newton_tolerance", tolerance_, 0.0);
+
+      switch(toleranceType)
+      {
+      case ResidualNormRelativeToInitial:
+        {
+          this->newton_tolerance[0] = tolerance_;
+          this->newton_tolerance_set[0] = true;
+        }
+        break;
+      case ResidualNormRelativeToPrevious:
+        {
+          this->newton_tolerance[1] = tolerance_;
+          this->newton_tolerance_set[1] = true;
+        }
+        break;
+      case ResidualNormRatioToInitial:
+        {
+          this->newton_tolerance[2] = tolerance_;
+          this->newton_tolerance_set[2] = true;
+        }
+        break;
+      case ResidualNormRatioToPrevious:
+        {
+          this->newton_tolerance[3] = tolerance_;
+          this->newton_tolerance_set[3] = true;
+        }
+        break;
+      case ResidualNormAbsolute:
+        {
+          this->newton_tolerance[4] = tolerance_;
+          this->newton_tolerance_set[4] = true;
+        }
+        break;
+      case SolutionDistanceFromPreviousAbsolute:
+        {
+          this->newton_tolerance[5] = tolerance_;
+          this->newton_tolerance_set[5] = true;
+        }
+        break;
+      case SolutionDistanceFromPreviousRelative:
+        {
+          this->newton_tolerance[6] = tolerance_;
+          this->newton_tolerance_set[6] = true;
+        }
+        break;
+      default:
+        throw Exceptions::Exception("Unknown NewtonSolverConvergenceMeasurementType in NewtonSolver::set_tolerance.");
+      }
     }
 
     template<typename Scalar>
@@ -180,7 +239,7 @@ namespace Hermes
     }
 
     template<typename Scalar>
-    void NewtonSolver<Scalar>::set_convergence_measurement(NewtonSolverConvergenceMeasurementType measurement)
+    void NewtonSolver<Scalar>::set_convergence_measurement(int measurement)
     {
       this->current_convergence_measurement = measurement;
     }
@@ -484,7 +543,7 @@ namespace Hermes
       this->info("\t\tresidual norm: %g,", residual_norm);
       this->info("\t\tsolution norm: %g,", this->get_parameter_value(this->p_solution_norms).back());
       this->info("\t\tsolution change norm: %g.", this->get_parameter_value(this->p_solution_change_norms).back());
-      if(this->current_convergence_measurement == SolutionDistanceFromPreviousRelative)
+      if(this->current_convergence_measurement & SolutionDistanceFromPreviousRelative)
         this->info("\t\trelative solution change: %g.", this->get_parameter_value(this->p_solution_change_norms).back() / this->get_parameter_value(this->p_solution_norms)[this->get_parameter_value(this->p_solution_norms).size() - 2]);
 
       // Output to disk.
