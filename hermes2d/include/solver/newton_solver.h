@@ -190,7 +190,7 @@ namespace Hermes
 
 #pragma endregion
 
-    protected:
+    public:
       /// \return Whether or not should the processing continue.
       virtual void on_damping_factor_updated();
       /// \return Whether or not should the processing continue.
