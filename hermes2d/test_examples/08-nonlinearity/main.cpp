@@ -63,8 +63,8 @@ int main(int argc, char* argv[])
     file = fopen("results.txt", "w");
 
     double suff_imp_step = 0.05;
-    double suff_imp_num = 16;
-    double suff_imp_min = 1;
+    double suff_imp_num = 18;
+    double suff_imp_min = 0.9;
 
     double suff_imp;
 
@@ -160,17 +160,19 @@ int main(int argc, char* argv[])
             }
 
             int iteration = 1000;
+            int jacobianRecalcs = 1000;
 
             if(converged)
             {
                 iteration = newton.get_parameter_value(newton.iteration());
+                jacobianRecalcs = newton.get_parameter_value(newton.iteration_with_recalculated_jacobian());
             }
 
             clock_t end = clock();
             double elapsed_secs = double(end - begin) / CLOCKS_PER_SEC;
 
 
-            fprintf(file, "%lf %lf %lf %lf %d %lf\n",  suff_imp_jac, max_st_reuse, initial_dump, suff_imp, iteration, elapsed_secs);
+            fprintf(file, "%lf %lf %lf %lf %d %d %lf\n",  suff_imp_jac, max_st_reuse, initial_dump, suff_imp, iteration, jacobianRecalcs, elapsed_secs);
 
            // Clean up.
            delete [] coeff_vec;
