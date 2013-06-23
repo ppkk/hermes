@@ -29,7 +29,7 @@ const int INIT_BDY_REF_NUM = 4;
 
 // Problem parameters.
 double heat_src = 1.0;
-double alpha = 13.0;
+double alpha = 12.0;
 
 int main(int argc, char* argv[])
 {
@@ -64,12 +64,14 @@ int main(int argc, char* argv[])
 
     double suff_imp_step = 0.05;
     double suff_imp_num = 16;
-    double suff_imp_min = 1.;
+    double suff_imp_min = 1;
+
     double suff_imp;
 
     double initial_dump_step = 0.05;
     double initial_dump_num = 16;
     double initial_dump_min = 0.25;
+
     double initial_dump;
 
     suff_imp = suff_imp_min;
@@ -80,7 +82,7 @@ int main(int argc, char* argv[])
         {
             clock_t begin = clock();
 
-            double suff_imp_jac = 0.05;
+            double suff_imp_jac = 0.8;
             double max_st_reuse = 99;
 
             // Initialize the FE problem.
