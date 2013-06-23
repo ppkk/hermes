@@ -444,7 +444,7 @@ namespace Hermes
     {
       memcpy(this->sln_vector, coeff_vec, ndof * sizeof(Scalar));
       this->tick();
-      this->info("\tNewton: solution duration: %f s.\n", this->last());
+      this->info("\tNewton: solution duration: %f s, iterations: %i.\n", this->last(), this->get_parameter_value(this->p_iteration), this->get_parameter_value(this->p_iteration_with_recalculated_jacobian));
       this->on_finish();
       this->deinit_solving(coeff_vec);
     }
@@ -500,6 +500,7 @@ namespace Hermes
       {
         this->matrix_solver->set_factorization_scheme(HERMES_FACTORIZE_FROM_SCRATCH);
         this->dp->assemble(coeff_vec, this->jacobian, this->residual);
+        this->get_parameter_value(this->p_iteration_with_recalculated_jacobian)++;
         this->jacobian_reusable = true;
       }
       if(this->report_cache_hits_and_misses)
@@ -626,6 +627,7 @@ namespace Hermes
 #pragma region parameter_setup
       // The Newton's loop.
       unsigned int it = 1;
+      unsigned int it_with_recalculated_jacobian = 0;
       unsigned int successful_steps_damping = 0;
       unsigned int successful_steps_jacobian = 0;
       Hermes::vector<double> residual_norms;
@@ -644,6 +646,7 @@ namespace Hermes
       this->set_parameter_value(this->p_successful_steps_damping, &successful_steps_damping);
       this->set_parameter_value(this->p_successful_steps_jacobian, &successful_steps_jacobian);
       this->set_parameter_value(this->p_iteration, &it);
+      this->set_parameter_value(this->p_iteration_with_recalculated_jacobian, &it_with_recalculated_jacobian);
       this->set_parameter_value(this->p_residual_norm_drop, &residual_norm_drop);
       this->set_parameter_value(this->p_damping_coefficients, &damping_coefficients);
 #pragma endregion
@@ -748,6 +751,7 @@ namespace Hermes
 
         // Reassemble the jacobian once not reusable anymore.
         this->info("\tNewton: re-calculating Jacobian.");
+        this->get_parameter_value(this->p_iteration_with_recalculated_jacobian)++;
         this->dp->assemble(coeff_vec, this->jacobian);
         if(this->report_cache_hits_and_misses)
           this->add_cache_hits_and_misses(this->dp);
