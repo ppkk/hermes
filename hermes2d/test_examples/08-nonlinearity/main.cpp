@@ -29,7 +29,7 @@ const int INIT_BDY_REF_NUM = 4;
 
 // Problem parameters.
 double heat_src = 1.0;
-double alpha = 12.0;
+double alpha = 13.0;
 
 int main(int argc, char* argv[])
 {
@@ -62,27 +62,33 @@ int main(int argc, char* argv[])
     FILE *file;
     file = fopen("results.txt", "w");
 
-    double suff_imp_step = 0.05;
-    double suff_imp_num = 18;
-    double suff_imp_min = 0.9;
+    double suff_imp_jac_step = 0.05;
+    double suff_imp_jac_num = 20;
+    double suff_imp_jac_min = 0.05;
 
-    double suff_imp;
+    double suff_imp_jac;
 
-    double initial_dump_step = 0.05;
-    double initial_dump_num = 16;
-    double initial_dump_min = 0.25;
+//    double suff_imp_step = 0.05;
+//    double suff_imp_num = 18;
+//    double suff_imp_min = 0.9;
 
-    double initial_dump;
+    double suff_imp = 1;
 
-    suff_imp = suff_imp_min;
-    for(int suff_imp_idx = 0; suff_imp_idx < suff_imp_num; suff_imp_idx++)
+    double initial_damp_step = 0.05;
+    double initial_damp_num = 16;
+    double initial_damp_min = 0.25;
+
+    double initial_damp;
+
+    suff_imp_jac = suff_imp_jac_min;
+    for(int suff_imp_jac_idx = 0; suff_imp_jac_idx < suff_imp_jac_num; suff_imp_jac_idx++)
     {
-        initial_dump = initial_dump_min;
-        for(int initial_dump_idx = 0; initial_dump_idx < initial_dump_num; initial_dump_idx++)
+        initial_damp = initial_damp_min;
+        for(int initial_damp_idx = 0; initial_damp_idx < initial_damp_num; initial_damp_idx++)
         {
             clock_t begin = clock();
 
-            double suff_imp_jac = 0.8;
+//            double suff_imp_jac = 0.8;
             double max_st_reuse = 99;
 
             // Initialize the FE problem.
@@ -111,7 +117,7 @@ int main(int argc, char* argv[])
             // muj pokus
             newton.set_sufficient_improvement_factor_jacobian(suff_imp_jac);
             newton.set_max_steps_with_reused_jacobian(max_st_reuse);
-            newton.set_initial_auto_damping_coeff(initial_dump);
+            newton.set_initial_auto_damping_coeff(initial_damp);
             newton.set_sufficient_improvement_factor(suff_imp);
 
 
@@ -172,17 +178,17 @@ int main(int argc, char* argv[])
             double elapsed_secs = double(end - begin) / CLOCKS_PER_SEC;
 
 
-            fprintf(file, "%lf %lf %lf %lf %d %d %lf\n",  suff_imp_jac, max_st_reuse, initial_dump, suff_imp, iteration, jacobianRecalcs, elapsed_secs);
+            fprintf(file, "%lf %lf %lf %lf %d %d %lf\n",  suff_imp_jac, max_st_reuse, initial_damp, suff_imp, iteration, jacobianRecalcs, elapsed_secs);
 
            // Clean up.
            delete [] coeff_vec;
 
 
-           initial_dump += initial_dump_step;
-           if(initial_dump > 1.0)
-               initial_dump = 1.0;
+           initial_damp += initial_damp_step;
+           if(initial_damp > 1.0)
+               initial_damp = 1.0;
         }
-        suff_imp += suff_imp_step;
+        suff_imp_jac += suff_imp_jac_step;
     }
 
     fclose(file);
