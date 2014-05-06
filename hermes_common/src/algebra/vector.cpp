@@ -476,10 +476,28 @@ namespace Hermes
     }
 
     template<typename Scalar>
+    Vector<Scalar>* SimpleVector<Scalar>::add_vector_multiple(Vector<Scalar>* vec, Scalar mult)
+    {
+      assert(this->get_size() == vec->get_size());
+      for (unsigned int i = 0; i < this->get_size(); i++)
+        this->add(i, vec->get(i) * mult);
+      return this;
+
+    }
+
+    template<typename Scalar>
     Vector<Scalar>* SimpleVector<Scalar>::add_vector(Scalar* vec)
     {
       for (unsigned int i = 0; i < this->get_size(); i++)
         this->add(i, vec[i]);
+      return this;
+    }
+
+    template<typename Scalar>
+    Vector<Scalar>* SimpleVector<Scalar>::add_vector_multiple(Scalar* vec, Scalar mult)
+    {
+      for (unsigned int i = 0; i < this->get_size(); i++)
+        this->add(i, vec[i] * mult);
       return this;
     }
 

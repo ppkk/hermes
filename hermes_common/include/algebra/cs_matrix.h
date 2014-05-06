@@ -23,6 +23,7 @@
 #define __HERMES_COMMON_CS_MATRIX_H
 
 #include "algebra/matrix.h"
+#include "algebra/vector.h"
 
 namespace Hermes
 {
@@ -75,6 +76,8 @@ namespace Hermes
       virtual void zero();
       /// Utility method.
       virtual void set_row_zero(unsigned int n);
+
+      virtual void extract_diagonal(SimpleVector<Scalar> *result) const;
 
       /// Matrix export method.
       /// Utility version
@@ -146,6 +149,7 @@ namespace Hermes
       virtual void add(unsigned int m, unsigned int n, Scalar v);
 
       void multiply_with_vector(Scalar* vector_in, Scalar*& vector_out, bool vector_out_initialized) const;
+      void multiply_with_vector(SimpleVector<Scalar>* vector_in, SimpleVector<Scalar>* vector_out) const;
 
       virtual void export_to_file(const char *filename, const char *var_name, MatrixExportFormat fmt, char* number_format = "%lf");
       virtual void import_from_file(const char *filename, const char *var_name, MatrixExportFormat fmt);

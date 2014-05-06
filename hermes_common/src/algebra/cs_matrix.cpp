@@ -342,6 +342,12 @@ namespace Hermes
     }
 
     template<typename Scalar>
+    void CSCMatrix<Scalar>::multiply_with_vector(SimpleVector<Scalar> *vector_in, SimpleVector<Scalar> *vector_out) const
+    {
+        multiply_with_vector(vector_in->v, vector_out->v, true);
+    }
+
+    template<typename Scalar>
     void CSCMatrix<Scalar>::multiply_with_vector(Scalar* vector_in, Scalar*& vector_out, bool vector_out_initialized) const
     {
       if (!vector_out_initialized)
@@ -371,6 +377,17 @@ namespace Hermes
       else
         return i;
     }
+
+    template<typename Scalar>
+    void CSMatrix<Scalar>::extract_diagonal(SimpleVector<Scalar>* result) const
+    {
+        assert(result->get_size() == this->get_size());
+        for(int i = 0; i < result->get_size(); i++)
+        {
+            result->set(i, this->get(i, i));
+        }
+    }
+
 
     template<typename Scalar>
     void CSMatrix<Scalar>::export_to_file(const char *filename, const char *var_name, MatrixExportFormat fmt, char* number_format, bool invert_storage)

@@ -56,7 +56,7 @@ Adapt<double> adaptivity(&errorCalculator, &stoppingCriterion);
 // Predefined list of element refinement candidates.
 const CandList CAND_LIST = H2D_HP_ANISO;
 // Stopping criterion for adaptivity.
-const double ERR_STOP = 1e-1;
+const double ERR_STOP = 1e-2;
 
 // Problem parameters.
 const double D_u = 1;
@@ -108,9 +108,10 @@ int main(int argc, char* argv[])
   SpaceSharedPtr<double> v_space(new H1Space<double>(MULTI ? v_mesh : u_mesh, &bcs_v, P_INIT_V));
 
   // Initialize coarse and reference mesh solutions.
-  MeshFunctionSharedPtr<double> u_sln(new Solution<double>()), v_sln(new Solution<double>()), u_ref_sln(new Solution<double>()), v_ref_sln(new Solution<double>());
+  MeshFunctionSharedPtr<double> u_sln(new Solution<double>()), v_sln(new Solution<double>()), u_ref_sln(new Solution<double>()), v_ref_sln(new Solution<double>()), u_ref_sln2(new Solution<double>()), v_ref_sln2(new Solution<double>());
   Hermes::vector<MeshFunctionSharedPtr<double> > slns(u_sln, v_sln);
   Hermes::vector<MeshFunctionSharedPtr<double> > ref_slns(u_ref_sln, v_ref_sln);
+  Hermes::vector<MeshFunctionSharedPtr<double> > ref_slns2(u_ref_sln2, v_ref_sln2);
   Hermes::vector<MeshFunctionSharedPtr<double> > exact_slns(exact_u, exact_v);
 
   // Initialize refinement selector.
@@ -181,6 +182,10 @@ int main(int argc, char* argv[])
     // Project the fine mesh solution onto the coarse mesh.
     Hermes::Mixins::Loggable::Static::info("Projecting reference solution on coarse mesh.");
     OGProjection<double> ogProjection; ogProjection.project_global(Hermes::vector<SpaceSharedPtr<double> >(u_space, v_space), ref_slns, slns);
+
+    // Project the fine mesh solution onto the coarse mesh.
+    Hermes::Mixins::Loggable::Static::info("Projecting coarse solution on reference mesh.");
+    OGProjection<double> ogProjection2; ogProjection2.project_global(Hermes::vector<SpaceSharedPtr<double> >(u_ref_space, v_ref_space), slns, ref_slns2);
 
     cpu_time.tick();
 

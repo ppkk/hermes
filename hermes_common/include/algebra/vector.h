@@ -122,7 +122,9 @@ namespace Hermes
       virtual void add(unsigned int idx, Scalar y);
       virtual void add(unsigned int n, unsigned int *idx, Scalar *y);
       virtual Vector<Scalar>* add_vector(Vector<Scalar>* vec);
+      virtual Vector<Scalar>* add_vector_multiple(Vector<Scalar>* vec, Scalar mult);
       virtual Vector<Scalar>* add_vector(Scalar* vec);
+      virtual Vector<Scalar>* add_vector_multiple(Scalar* vec, Scalar mult);
       virtual Vector<Scalar>* set_vector(Vector<Scalar>* vec);
       virtual Vector<Scalar>* set_vector(Scalar* vec);
 
@@ -164,5 +166,21 @@ namespace Hermes
     }
     return sqrt(std::abs(val));
   }
+
+  template<typename Scalar>
+  double get_dot_product(Algebra::Vector<Scalar>* vec1, Algebra::Vector<Scalar>* vec2)
+  {
+    Scalar val = 0;
+    assert(vec1->get_size() == vec2->get_size());
+    for (unsigned int i = 0; i < vec1->get_size(); i++)
+    {
+      Scalar inc1 = vec1->get(i);
+      Scalar inc2 = vec2->get(i);
+      val = val + inc1*conj(inc2);
+    }
+    return val;
+  };
+
+
 }
 #endif

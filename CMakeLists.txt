@@ -24,14 +24,14 @@ project(hermes)
   # HermesCommon
   # These are ignored for MSVC (where debug / release are handled differently)
   set(HERMES_COMMON_DEBUG     YES)
-  set(HERMES_COMMON_RELEASE   YES)
+  set(HERMES_COMMON_RELEASE   NO)
 
   # Hermes2D:
   set(WITH_H2D                  YES)
     # Release and debug versions.
     # These are ignored for MSVC (where debug / release are handled differently)
     set(H2D_DEBUG               YES)
-    set(H2D_RELEASE             YES)
+    set(H2D_RELEASE             NO)
 	
     # Optional parts of the library.
     set(H2D_WITH_GLUT           YES)
