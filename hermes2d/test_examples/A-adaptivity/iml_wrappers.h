@@ -227,15 +227,28 @@ public:
     {
         data = new double[n*m];
         memset(data, 0, n*m*sizeof(double));
+
+        matrix_changed = true;
+        umfpack_matrix = nullptr;
+        umfpack_solver = nullptr;
+        umfpack_rhs = nullptr;
     }
     ~IMLMatrix()
     {
         delete[] data;
+
+        if(umfpack_matrix)
+            delete umfpack_matrix;
+        if(umfpack_rhs)
+            delete umfpack_rhs;
+        if(umfpack_solver)
+            delete umfpack_solver;
     }
 
     double& operator() (int i, int j)
     {
         assert( (i >= 0) && (i < nrows) && (j >= 0) && (j < ncols) );
+        matrix_changed = true;
         return data[nrows*i + j];
     }
 
@@ -260,6 +273,53 @@ public:
         return result;
     }
 
+    IMLVector solve(const IMLVector& arg)
+    {
+        if(!umfpack_solver)
+        {
+            assert(!umfpack_matrix);
+            assert(!umfpack_rhs);
+            umfpack_matrix = new CSCMatrix<double>;
+            umfpack_rhs = new SimpleVector<double>;
+            umfpack_solver = new Solvers::UMFPackLinearMatrixSolver<double>(umfpack_matrix, umfpack_rhs);
+        }
+
+        arg.copy(umfpack_rhs);
+        if(matrix_changed)
+        {
+            umfpack_matrix->zero();
+            assert(nrows == ncols);
+            int size = nrows;
+            int nnz = size*size;
+            int ap[size+1];
+            int ai[nnz];
+            double ax[nnz];
+
+            for(int i = 0; i <= size; i++)
+            {
+                ap[i] = i * size;
+            }
+            for(int i = 0; i < size; i++)
+            {
+                for(int j = 0; j < size; j++)
+                {
+                    ai[size*i + j] = j;
+                    ax[size*i + j] = (*this)(i,j);
+                }
+            }
+        }
+
+
+        if(matrix_changed)
+            umfpack_solver->set_reuse_scheme(Hermes::Solvers::HERMES_CREATE_STRUCTURE_FROM_SCRATCH);
+        else
+            umfpack_solver->set_reuse_scheme(Hermes::Solvers::HERMES_REUSE_MATRIX_STRUCTURE_COMPLETELY);
+        umfpack_solver->solve();
+        matrix_changed = false;
+
+        umfpack_solver->get
+    }
+
     friend std::ostream& operator<<(std::ostream& os, const IMLMatrix& mat);
 
     int num_rows() const { return nrows; }
@@ -267,6 +327,12 @@ public:
 
     double *data;
     int nrows, ncols;
+
+    // used when solve is required
+    Solvers::UMFPackLinearMatrixSolver<double> *umfpack_solver;
+    CSCMatrix<double> *umfpack_matrix;
+    SimpleVector<double> *umfpack_rhs;
+    bool matrix_changed;
 };
 
 std::ostream& operator<<(std::ostream& os, const IMLMatrix& mat)
