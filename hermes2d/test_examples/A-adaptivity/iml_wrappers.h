@@ -388,6 +388,44 @@ public:
         return iml_x;
     }
 
+    void print_sparse(const char* filename, const char* varname)
+    {
+        int rows[nrows*ncols];
+        int cols[nrows*ncols];
+        double vals[nrows*ncols];
+
+        int nnz = 0;
+        for(int row = 0; row < nrows; row++)
+        {
+            for(int col = 0; col < ncols; col++)
+            {
+                if(fabs((*this)(row, col)) > 1e-13)
+                {
+                    rows[nnz] = row+1;
+                    cols[nnz] = col+1;
+                    vals[nnz] = (*this)(row, col);
+                    nnz++;
+                }
+            }
+        }
+
+        FILE* f = NULL;
+        f = fopen(filename, "w");
+        assert(f!=NULL);
+
+        fprintf(f, "rows=[");
+        for(int i = 0; i < nnz; i++)
+            fprintf(f, "%d, ", rows[i]);
+        fprintf(f, "];\ncols=[");
+        for(int i = 0; i < nnz; i++)
+            fprintf(f, "%d, ", cols[i]);
+        fprintf(f, "];\nvals = [");
+        for(int i = 0; i < nnz; i++)
+            fprintf(f, "%g, ", vals[i]);
+        fprintf(f, "];\n %s = sparse(rows, cols, vals);", varname);
+        fclose(f);
+    }
+
     friend std::ostream& operator<<(std::ostream& os, const IMLMatrix& mat);
 
     int num_rows() const { return nrows; }
