@@ -110,6 +110,7 @@ project(hermes2d)
   # Source files for the Hermes2d library.
   #
   set(SRC
+    src/vertex_based_interpolation.cpp
     src/boundary_conditions/essential_boundary_conditions.cpp
     src/api2d.cpp
     src/graph.cpp
@@ -222,6 +223,7 @@ project(hermes2d)
   
   SOURCE_GROUP(
     "Source Files\\Internal" FILES 
+    src/vertex_based_interpolation.cpp
     src/neighbor_search.cpp
     src/norm_form.cpp
     src/spline.cpp
@@ -355,6 +357,7 @@ project(hermes2d)
   )
   
   set(HEADERS
+    include/vertex_based_interpolation.h
     include/api2d.h
     include/boundary_conditions/essential_boundary_conditions.h
     include/mixins2d.h
@@ -468,6 +471,7 @@ project(hermes2d)
   
   SOURCE_GROUP(
     "Header Files\\Internal" FILES 
+    include/vertex_based_interpolation.h
     include/projections/ogprojection.h
     include/projections/ogprojection_nox.h
     include/global.h

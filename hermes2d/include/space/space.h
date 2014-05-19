@@ -407,7 +407,7 @@ namespace Hermes
           Node* base;
           int part;
         };
-        NodeData() : dof(0), edge_bc_proj(nullptr) {}
+        NodeData() : dof(0), edge_bc_proj(nullptr), baselist(nullptr), base(nullptr) {}
       };
 
       class ElementData
@@ -491,6 +491,7 @@ namespace Hermes
         double lo, hi;
       };
 
+      template<typename T> friend class VertexBasedInterpolation;
       template<typename T> friend class OGProjection;
       template<typename T> friend class NewtonSolver;
       template<typename T> friend class PicardSolver;
