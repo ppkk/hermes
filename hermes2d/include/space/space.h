@@ -384,29 +384,24 @@ namespace Hermes
         Scalar coef;
       };
 
-      union NodeData
+      struct NodeData
       {
-        struct // regular node
+        int dof;
+        union
         {
-          int dof;
-          union {
-            Scalar* edge_bc_proj;
-            Scalar* vertex_bc_coef;
-          };
-          /// Number of dofs. Temporarily used during assignment
-          /// of DOFs to indicate nodes which were not processed yet.
-          int n;
+          Scalar* edge_bc_proj;
+          Scalar* vertex_bc_coef;
         };
-        struct // constrained vertex node
-        {
-          BaseComponent* baselist;
-          int ncomponents;
-        };
-        struct // constrained edge node
-        {
-          Node* base;
-          int part;
-        };
+        int n;
+
+        // constrained vertex node
+        BaseComponent* baselist;
+        int ncomponents;
+
+        // constrained edge node
+        Node* base;
+        int part;
+
         NodeData() : dof(0), edge_bc_proj(nullptr), baselist(nullptr), base(nullptr) {}
       };
 

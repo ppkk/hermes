@@ -94,17 +94,17 @@ int main(int argc, char* argv[])
   rlinear_solver.solve();
   Solution<double>::vector_to_solution(rlinear_solver.get_sln_vector(), rspace, rsln);
   rs.show(rsln);
-  View::wait();
 
   //
   // Interpolated.
   //
   double* interpolated_vector;
   MeshFunctionSharedPtr<double> isln(new Solution<double>);
-  VertexBasedInterpolation<double>::interpolate(rspace, rlinear_solver.get_sln_vector(), space, interpolated_vector);
-  Solution<double>::vector_to_solution(interpolated_vector, space, isln);
+  VertexBasedInterpolation<double>::interpolate(space, linear_solver.get_sln_vector(), rspace, interpolated_vector);
+  Solution<double>::vector_to_solution(interpolated_vector, rspace, isln);
   ScalarView is;
   is.show(isln);
+
 
   View::wait();
   return 0;
