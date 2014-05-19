@@ -40,10 +40,10 @@ namespace Hermes
 
         for (unsigned char edge = 0; edge < current_state->rep->nvert; edge++)
         {
-          Space<Scalar>::NodeData* out_nd = out_space->ndata + current_state->e[1]->vn[edge]->id;
+          typename Space<Scalar>::NodeData* out_nd = out_space->ndata + current_state->e[1]->vn[edge]->id;
           if (current_state->e[0]->vn[edge]->id == current_state->e[1]->vn[edge]->id && out_space->ndata[current_state->e[1]->vn[edge]->id].n == 1)
           {
-            Space<Scalar>::NodeData* src_nd = src_space->ndata + current_state->e[0]->vn[edge]->id;
+            typename Space<Scalar>::NodeData* src_nd = src_space->ndata + current_state->e[0]->vn[edge]->id;
             if (src_space->ndata[current_state->e[0]->vn[edge]->id].n == 1 && src_nd->dof >= 0)
               out_sln_vector[out_nd->dof] = src_sln_vector[src_nd->dof];
           }
