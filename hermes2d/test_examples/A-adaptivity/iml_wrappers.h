@@ -1,6 +1,7 @@
 #ifndef IML_WRAPPERS_H
 #define IML_WRAPPERS_H
 
+#include "hermes_common.h"
 #include "hermes2d.h"
 #include <iostream>
 
@@ -57,6 +58,13 @@ public:
         free();
         alloc(x->get_size());
         memcpy(m_data, x->v, m_size * sizeof(double));
+    }
+
+    void set(double* source, int size)
+    {
+        free();
+        alloc(size);
+        memcpy(m_data, source, m_size * sizeof(double));
     }
 
     int size() const
@@ -220,135 +228,6 @@ public:
     CSCMatrix<double>* m_csc_matrix;
 };
 
-class IMLMatrix
-{
-public:
-    IMLMatrix(int n, int m) : nrows(n), ncols(m)
-    {
-        data = new double[n*m];
-        memset(data, 0, n*m*sizeof(double));
-
-        matrix_changed = true;
-        umfpack_matrix = nullptr;
-        umfpack_solver = nullptr;
-        umfpack_rhs = nullptr;
-    }
-    ~IMLMatrix()
-    {
-        delete[] data;
-
-        if(umfpack_matrix)
-            delete umfpack_matrix;
-        if(umfpack_rhs)
-            delete umfpack_rhs;
-        if(umfpack_solver)
-            delete umfpack_solver;
-    }
-
-    double& operator() (int i, int j)
-    {
-        assert( (i >= 0) && (i < nrows) && (j >= 0) && (j < ncols) );
-        matrix_changed = true;
-        return data[nrows*i + j];
-    }
-
-    double operator() (int i, int j) const
-    {
-        assert( (i >= 0) && (i < nrows) && (j >= 0) && (j < ncols) );
-        return data[nrows*i + j];
-    }
-
-    IMLVector operator*(const IMLVector& x) const
-    {
-        assert(x.size() == ncols);
-        IMLVector result(nrows);
-        for(int i = 0; i < nrows; i++)
-        {
-            result(i) = 0.;
-            for(int j = 0; j < ncols; j++)
-            {
-                result(i) += (*this)(i,j) * x(j);
-            }
-        }
-        return result;
-    }
-
-    IMLVector solve(const IMLVector& arg)
-    {
-        if(!umfpack_solver)
-        {
-            assert(!umfpack_matrix);
-            assert(!umfpack_rhs);
-            umfpack_matrix = new CSCMatrix<double>;
-            umfpack_rhs = new SimpleVector<double>;
-            umfpack_solver = new Solvers::UMFPackLinearMatrixSolver<double>(umfpack_matrix, umfpack_rhs);
-        }
-
-        arg.copy(umfpack_rhs);
-        if(matrix_changed)
-        {
-            umfpack_matrix->zero();
-            assert(nrows == ncols);
-            int size = nrows;
-            int nnz = size*size;
-            int ap[size+1];
-            int ai[nnz];
-            double ax[nnz];
-
-            for(int i = 0; i <= size; i++)
-            {
-                ap[i] = i * size;
-            }
-            for(int i = 0; i < size; i++)
-            {
-                for(int j = 0; j < size; j++)
-                {
-                    ai[size*i + j] = j;
-                    ax[size*i + j] = (*this)(i,j);
-                }
-            }
-        }
-
-
-        if(matrix_changed)
-            umfpack_solver->set_reuse_scheme(Hermes::Solvers::HERMES_CREATE_STRUCTURE_FROM_SCRATCH);
-        else
-            umfpack_solver->set_reuse_scheme(Hermes::Solvers::HERMES_REUSE_MATRIX_STRUCTURE_COMPLETELY);
-        umfpack_solver->solve();
-        matrix_changed = false;
-
-        umfpack_solver->get
-    }
-
-    friend std::ostream& operator<<(std::ostream& os, const IMLMatrix& mat);
-
-    int num_rows() const { return nrows; }
-    int num_cols() const { return ncols; }
-
-    double *data;
-    int nrows, ncols;
-
-    // used when solve is required
-    Solvers::UMFPackLinearMatrixSolver<double> *umfpack_solver;
-    CSCMatrix<double> *umfpack_matrix;
-    SimpleVector<double> *umfpack_rhs;
-    bool matrix_changed;
-};
-
-std::ostream& operator<<(std::ostream& os, const IMLMatrix& mat)
-{
-    os << "*********************************" << std::endl;
-    for(int i = 0; i < mat.nrows; i++)
-    {
-        for(int j = 0; j < mat.ncols; j++)
-        {
-            os << mat(i, j) << " ";
-        }
-        os << std::endl;
-    }
-    os << "*********************************" << std::endl;
-    return os;
-}
 
 
 class IMLEmptyPreconditioner
@@ -387,20 +266,173 @@ public:
 };
 
 
+class IMLMatrix
+{
+public:
+    IMLMatrix(int n, int m) : nrows(n), ncols(m)
+    {
+        data = new double[n*m];
+        memset(data, 0, n*m*sizeof(double));
+
+        matrix_changed = true;
+        umfpack_matrix = nullptr;
+        umfpack_solver = nullptr;
+        umfpack_rhs = nullptr;
+    }
+    ~IMLMatrix()
+    {
+        delete[] data;
+
+        if(umfpack_matrix)
+            delete umfpack_matrix;
+        if(umfpack_rhs)
+            delete umfpack_rhs;
+        if(umfpack_solver)
+            delete umfpack_solver;
+    }
+
+    double& operator() (int i, int j)
+    {
+        assert( (i >= 0) && (i < nrows) && (j >= 0) && (j < ncols) );
+        matrix_changed = true;
+        return data[ncols*i + j];
+    }
+
+    double operator() (int i, int j) const
+    {
+        assert( (i >= 0) && (i < nrows) && (j >= 0) && (j < ncols) );
+        return data[ncols*i + j];
+    }
+
+    IMLVector operator*(const IMLVector& x) const
+    {
+        assert(x.size() == ncols);
+        IMLVector result(nrows);
+        for(int i = 0; i < nrows; i++)
+        {
+            result(i) = 0.;
+            for(int j = 0; j < ncols; j++)
+            {
+                result(i) += (*this)(i,j) * x(j);
+            }
+        }
+        return result;
+    }
+
+    IMLVector solve(const IMLVector& arg)
+    {
+        if(!umfpack_solver)
+        {
+            assert(!umfpack_matrix);
+            assert(!umfpack_rhs);
+            umfpack_matrix = new CSCMatrix<double>;
+            umfpack_rhs = new SimpleVector<double>;
+            umfpack_solver = new Hermes::Solvers::UMFPackLinearMatrixSolver<double>(umfpack_matrix, umfpack_rhs);
+        }
+
+        arg.copy(umfpack_rhs);
+        if(matrix_changed)
+        {
+            umfpack_matrix->zero();
+            assert(nrows == ncols);
+            int size = nrows;
+            int nnz = size*size;
+            int ap[size+1];
+            int ai[nnz];
+            double ax[nnz];
+
+            for(int i = 0; i <= size; i++)
+            {
+                ap[i] = i * size;
+            }
+            for(int i = 0; i < size; i++)
+            {
+                for(int j = 0; j < size; j++)
+                {
+                    ai[size*i + j] = j;
+                    ax[size*i + j] = (*this)(j,i);
+                }
+            }
+
+            umfpack_matrix->create(size, nnz, ap, ai, ax);
+        }
+
+
+        if(matrix_changed)
+            umfpack_solver->set_reuse_scheme(Hermes::Solvers::HERMES_CREATE_STRUCTURE_FROM_SCRATCH);
+        else
+            umfpack_solver->set_reuse_scheme(Hermes::Solvers::HERMES_REUSE_MATRIX_STRUCTURE_COMPLETELY);
+
+        umfpack_solver->solve();
+        matrix_changed = false;
+
+        IMLVector result;
+        result.set(umfpack_solver->get_sln_vector(), nrows);
+
+        return result;
+    }
+
+    IMLVector solve_gmres(const IMLVector& arg)
+    {
+        IMLEmptyPreconditioner empty_preconditioner;
+        int gmres_m = 50;
+        double tol = 1e-12;
+        int max_iter = 500;
+        int size = arg.size();
+        IMLMatrix iml_matrix(gmres_m+1, size);
+        IMLVector iml_x(size);
+
+        int converged = GMRES(*this, iml_x, arg, empty_preconditioner, iml_matrix, gmres_m, max_iter, tol);
+        Hermes::Mixins::Loggable::Static::info("GMRES converged %d, tol %g, steps %d, ndofs %d", converged, tol, max_iter, size);
+
+        return iml_x;
+    }
+
+    friend std::ostream& operator<<(std::ostream& os, const IMLMatrix& mat);
+
+    int num_rows() const { return nrows; }
+    int num_cols() const { return ncols; }
+
+    double *data;
+    int nrows, ncols;
+
+    // used when solve is required
+    Solvers::UMFPackLinearMatrixSolver<double> *umfpack_solver;
+    CSCMatrix<double> *umfpack_matrix;
+    SimpleVector<double> *umfpack_rhs;
+    bool matrix_changed;
+};
+
+std::ostream& operator<<(std::ostream& os, const IMLMatrix& mat)
+{
+    os << "*********************************" << std::endl;
+    for(int i = 0; i < mat.nrows; i++)
+    {
+        for(int j = 0; j < mat.ncols; j++)
+        {
+            os << mat(i, j) << " ";
+        }
+        os <<";" << std::endl;
+    }
+    os << "*********************************" << std::endl;
+    return os;
+}
+
+
 template <class Operator, class Precond>
 class IMLPrecondTimesMatrixOperator
 {
 public:
-    IMLPrecondTimesMatrixOperator(const Operator& oper, const Precond& precond) : oper(oper), precond(precond) {}
+    IMLPrecondTimesMatrixOperator(const Operator* oper, const Precond* precond) : oper(oper), precond(precond) {}
     IMLVector operator*(const IMLVector& x) const
     {
         IMLVector result;
-        result = precond.solve(oper*x);
+        result = (*precond).solve((*oper)*x);
         return result;
     }
 
-    const Operator& oper;
-    const Precond& precond;
+    const Operator* oper;
+    const Precond* precond;
 };
 
 template <class Operator, class Matrix>
@@ -451,12 +483,27 @@ void test_iml_wrappers()
     std::cout << "x     " << x << std::endl;
     std::cout << "mat*x " << mat * x << std::endl;
 
-    std::cout << "Testing IMLOperatorToMatrix:";
+    std::cout << "Testing IMLOperatorToMatrix:\n";
     IMLMatrix mat_cpy(ndofs, ndofs);
     std::cout << mat;
-    std::cout << mat_cpy;
     IMLOperatorToMatrix(mat, mat_cpy);
     std::cout << mat_cpy;
+
+    x = 0.0;
+    std::cout << "x     " << x << std::endl;
+    std::cout << "rhs   " << vec << std::endl;
+    x = mat_cpy.solve(vec);
+    std::cout << "x     " << x << std::endl;
+    std::cout << "mat*x " << mat * x << std::endl;
+
+    x = 0.0;
+    std::cout << "x     " << x << std::endl;
+    std::cout << "rhs   " << vec << std::endl;
+    x = mat_cpy.solve_gmres(vec);
+    std::cout << "x     " << x << std::endl;
+    std::cout << "mat*x " << mat * x << std::endl;
+
+
 }
 
 #endif // IML_WRAPPERS_H

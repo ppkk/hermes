@@ -71,7 +71,6 @@ public:
         Views::ScalarView sview_fine("Fine", new Views::WinGeom(0, 400, 440, 350));
         sview_fine.show_mesh(true);
         sview_fine.fix_scale_width(50);
-        sview_fine.get_linearizer()->set_criterion(lincrit);
         Views::ScalarView sview_coarse_projection("Coarse projection", new Views::WinGeom(0, 800, 440, 350));
         sview_coarse_projection.show_mesh(true);
         sview_coarse_projection.fix_scale_width(50);
@@ -106,8 +105,8 @@ public:
         // fine direct solver
 
         char file_name[100];
-        sprintf(file_name, "vector_in_%d", file_index);
-        vector_in.export_to_file(file_name, "in", EXPORT_FORMAT_MATRIX_MARKET, "%g");
+//        sprintf(file_name, "vector_in_%d", file_index);
+//        vector_in.export_to_file(file_name, "in", EXPORT_FORMAT_MATRIX_MARKET, "%g");
         MeshFunctionSharedPtr<double> tmp_solution(new Solution<double>()), tmp_solution2(new Solution<double>());
         Solution<double>::vector_to_solution(vector_in.v, fine_space, tmp_solution);
         if(show_progress) sview_fine.show(tmp_solution);
@@ -148,13 +147,13 @@ public:
         //result.set_vector(direct_solver_fine->get_sln_vector());
 
 
-        // or finer solution moved to coarse mesh and back
-        projection.alloc(coarse_space->get_num_dofs());
-        Solution<double>::vector_to_solution(result.v, fine_space, tmp_solution);
-        OGProjection<double>::project_global(coarse_space, tmp_solution, &projection);
-        result.alloc(fine_space->get_num_dofs());
-        Solution<double>::vector_to_solution(projection.v, coarse_space, tmp_solution2);
-        OGProjection<double>::project_global(fine_space, tmp_solution2, &result);
+//        // or finer solution moved to coarse mesh and back
+//        projection.alloc(coarse_space->get_num_dofs());
+//        Solution<double>::vector_to_solution(result.v, fine_space, tmp_solution);
+//        OGProjection<double>::project_global(coarse_space, tmp_solution, &projection);
+//        result.alloc(fine_space->get_num_dofs());
+//        Solution<double>::vector_to_solution(projection.v, coarse_space, tmp_solution2);
+//        OGProjection<double>::project_global(fine_space, tmp_solution2, &result);
 
 //        // or try to exactly solve this perturbed projection
 //        rhs_fine->set_vector(vector_in); //result);
@@ -164,14 +163,14 @@ public:
 
 
         // or not to do anything at all:
-        //result.set_vector(&vector_in);
+//        result.set_vector(&vector_in);
 
         if(show_progress) Solution<double>::vector_to_solution(result.v, fine_space, tmp_solution);
         if(show_progress) sview_back.show(tmp_solution);
 
 
-        sprintf(file_name, "vector_out_%d", file_index++);
-        result.export_to_file(file_name, "out", EXPORT_FORMAT_MATRIX_MARKET, "%g");
+//        sprintf(file_name, "vector_out_%d", file_index++);
+//        result.export_to_file(file_name, "out", EXPORT_FORMAT_MATRIX_MARKET, "%g");
 
         if(show_progress) oview_coarse.show(coarse_space);
         if(show_progress) oview_fine.show(fine_space);
@@ -194,9 +193,142 @@ public:
 
 };
 
+void test_projections(SpaceSharedPtr<double> coarse_space, SpaceSharedPtr<double> fine_space)
+{
+    Views::ScalarView sview_fine("Fine", new Views::WinGeom(0, 800, 440, 350));
+    sview_fine.show_mesh(true);
+    sview_fine.fix_scale_width(50);
+    Views::ScalarView sview_coarse_projection("Coarse projection", new Views::WinGeom(500, 800, 440, 350));
+    sview_coarse_projection.show_mesh(true);
+    sview_coarse_projection.fix_scale_width(50);
+    Views::ScalarView sview_coarse_matrix_projection("Coarse projection matrix", new Views::WinGeom(950, 800, 440, 350));
+    sview_coarse_matrix_projection.show_mesh(true);
+    sview_coarse_matrix_projection.fix_scale_width(50);
+    sview_fine.set_min_max_range(minr,maxr);
+    sview_coarse_projection.set_min_max_range(minr,maxr);
+    sview_coarse_matrix_projection.set_min_max_range(minr,maxr);
+    sview_fine.get_linearizer()->set_criterion(lincrit);
+    sview_coarse_projection.get_linearizer()->set_criterion(lincrit);
+    sview_coarse_matrix_projection.get_linearizer()->set_criterion(lincrit);
+
+    int n_coarse = coarse_space->get_num_dofs();
+    int n_fine = fine_space->get_num_dofs();
+
+    IMLMatrix coarsen(n_coarse, n_fine);
+    SimpleVector<double> projection;
+    MeshFunctionSharedPtr<double> tmp_solution(new Solution<double>);
+    projection.alloc(n_coarse);
+    double vec[n_fine];
+    for(int i = 0; i < n_fine; i++)
+    {
+        memset(vec, 0, n_fine*sizeof(double));
+        vec[i] = 1.;
+
+        projection.zero();
+        Solution<double>::vector_to_solution(vec, fine_space, tmp_solution);
+        OGProjection<double>::project_global(coarse_space, tmp_solution, &projection);
+        for(int j = 0; j < n_coarse; j++)
+            coarsen(j, i) = projection.v[j];
+
+//        sview_fine.show(tmp_solution);
+//        Solution<double>::vector_to_solution(projection.v, coarse_space, tmp_solution);
+//        sview_coarse_projection.show(tmp_solution);
+//        getchar();
+    }
+
+    IMLMatrix refine(n_fine, n_coarse);
+    projection.alloc(n_fine);
+    double vec2[n_coarse];
+    for(int i = 0; i < n_coarse; i++)
+    {
+        memset(vec, 0, n_coarse*sizeof(double));
+        vec[i] = 1.;
+
+        projection.zero();
+        Solution<double>::vector_to_solution(vec, coarse_space, tmp_solution);
+        OGProjection<double>::project_global(fine_space, tmp_solution, &projection);
+        for(int j = 0; j < n_fine; j++)
+            refine(j, i) = projection.v[j];
+    }
+
+    projection.alloc(n_coarse);
+    memset(vec, 0, n_fine*sizeof(double));
+    vec[0] = 1.;
+    vec[1] = 1.;
+//    for(int i = 0; i < n_fine; i++)
+//        vec[i] = i%10;
+    IMLVector iml_vec;
+    iml_vec.set(vec, n_fine);
+    Solution<double>::vector_to_solution(vec, fine_space, tmp_solution);
+    OGProjection<double>::project_global(coarse_space, tmp_solution, &projection);
+    IMLVector iml_projection;
+    iml_projection.set(&projection);
+    std::cout << " je projekce linearni? : " << norm(coarsen * iml_vec - iml_projection) << std::endl;
+
+    projection.alloc(n_fine);
+    memset(vec, 0, n_coarse*sizeof(double));
+    vec[0] = 1.;
+    vec[1] = 1.;
+//    for(int i = 0; i < n_fine; i++)
+//        vec[i] = i%10;
+    iml_vec.set(vec, n_coarse);
+    Solution<double>::vector_to_solution(vec, coarse_space, tmp_solution);
+    OGProjection<double>::project_global(fine_space, tmp_solution, &projection);
+    iml_projection.set(&projection);
+    std::cout << " je projekce linearni? : " << norm(refine * iml_vec - iml_projection) << std::endl;
+
+    //std::cout << " coarsern " << coarsen;
+    //std::cout << " refine " << refine;
+
+    memset(vec, 0, n_fine*sizeof(double));
+    vec[0] = 1.;
+    vec[1] = 1.;
+//    vec[20] = -2.;
+//    vec[31] = 3.;
+//    vec[000] = 3.;
+//    vec[200] = 3.;
+//    vec[300] = 3.;
+
+    projection.alloc((n_coarse));
+    projection.zero();
+    Solution<double>::vector_to_solution(vec, fine_space, tmp_solution);
+    OGProjection<double>::project_global(coarse_space, tmp_solution, &projection);
+    sview_fine.show(tmp_solution);
+    Solution<double>::vector_to_solution(projection.v, coarse_space, tmp_solution);
+    sview_coarse_projection.show(tmp_solution);
+    iml_vec.set(vec, n_fine);
+    IMLVector iml_vec_2 = coarsen * iml_vec;
+    Solution<double>::vector_to_solution(iml_vec_2.m_data, coarse_space, tmp_solution);
+    sview_coarse_matrix_projection.show(tmp_solution);
+
+    getchar();
+
+}
+
+
+void test_projection_precond(const ProjectionPrecond& precond, const IMLPrecondTimesMatrixOperator<IMLOperator, ProjectionPrecond> & precondOperator)
+{
+    int size = precond.fine_space->get_num_dofs();
+    IMLVector vec(size), result1(size), result2(size);
+    for(int i = 0; i < size; i++)
+    {
+        vec(i) = i;
+    }
+
+    result1 = precond.solve(vec);
+    result2 = precond.solve(vec);
+
+    std::cout << "test precond: norm = " << norm(result1-result2) << std::endl;
+
+    result1 = precondOperator * vec;
+    result2 = precondOperator * vec;
+
+    std::cout << "test precond operator: norm = " << norm(result1-result2) << std::endl;
+}
+
 int main(int argc, char* argv[])
 {
-  test_iml_wrappers();
+  //test_iml_wrappers();
   adaptivity.set_regularization_level(1);
 
   // Load the mesh.
@@ -294,7 +426,7 @@ int main(int argc, char* argv[])
     double tol = 1e-10;
     int max_iter = 50;
     IMLOperator iml_operator(&m_fine);
-    IMLMatrix iml_matrix(ndof_ref, gmres_m);
+    IMLMatrix iml_matrix(gmres_m+1, ndof_ref);
     IMLVector iml_x, iml_b;
     iml_x.alloc(ndof_ref);
     iml_x = 0.0;
@@ -311,8 +443,8 @@ int main(int argc, char* argv[])
     projection_preconditioner.direct_solver_fine = &umfpack_solver_fine;
     projection_preconditioner.rhs_fine = &rhs_fine;
 
-    IMLPrecondTimesMatrixOperator<IMLOperator, ProjectionPrecond> projection_precond_operator(iml_operator, projection_preconditioner);
-    IMLPrecondTimesMatrixOperator<IMLOperator, IMLDiagPreconditioner> diag_precond_operator(iml_operator, diag_preconditioner);
+    IMLPrecondTimesMatrixOperator<IMLOperator, ProjectionPrecond> projection_precond_operator(&iml_operator, &projection_preconditioner);
+    IMLPrecondTimesMatrixOperator<IMLOperator, IMLDiagPreconditioner> diag_precond_operator(&iml_operator, &diag_preconditioner);
 
     bool solve_directly = (as % 4 == 1);
 
@@ -327,26 +459,50 @@ int main(int argc, char* argv[])
         last_directly_solved_rhs.alloc(rhs.get_size());
         last_directly_solved_rhs.set_vector(&rhs);
 
+        IMLOperator oper(&m);
+        IMLMatrix matrix(rhs.get_size(), rhs.get_size());
+        IMLOperatorToMatrix(oper, matrix);
+        std::cout << matrix;
+
         Space<double>::ReferenceSpaceCreator spaceCreator(ref_space, last_directly_solved_mesh, 0);
         last_directly_solved_space = spaceCreator.create_ref_space();
         //last_directly_solved_space->copy(ref_space, last_directly_solved_mesh);
     }
     else
     {
+        int converged = 0;
+        test_projections(last_directly_solved_space, ref_space);
+        test_projection_precond(projection_preconditioner, projection_precond_operator);
+
         Hermes::Mixins::Loggable::Static::info("+++++++ adaptivity step %d -> using     ITERATIVE    solver", as);
         x.alloc(rhs_fine.get_size());
         x.zero();
 
-        IMLMatrix test_matrix(ndof_ref, ndof_ref);
-        IMLOperatorToMatrix(projection_precond_operator, test_matrix);
+        IMLMatrix dense_matrix(ndof_ref, ndof_ref);
+        IMLMatrix dense_precond_matrix(ndof_ref, ndof_ref);
+        IMLOperatorToMatrix(iml_operator, dense_matrix);
+        IMLOperatorToMatrix(projection_precond_operator, dense_precond_matrix);
+        IMLVector iml_prec_b = projection_preconditioner.solve(iml_b);
 
-//        iml_x = projection_preconditioner.solve(iml_b); int converged = 0;
-//        std::cout << "error " << norm(projection_precond_operator * iml_b - iml_b) << std::endl;
+        iml_x = dense_precond_matrix.solve_gmres(iml_prec_b);
+//        std::cout << "b : \n";
+//        std::cout << iml_b << std::endl;
+//        std::cout << "precond b : \n";
+//        std::cout << iml_prec_b << std::endl;
+//        std::cout << "normal matrix " << dense_matrix;
+//        std::cout << "precond matrix " << dense_precond_matrix;
+//        std::cout << "x: \n";
+//        std::cout << iml_x << std::endl;
+//        std::cout << "check: \n";
+//        std::cout << dense_precond_matrix * iml_x << std::endl;
+
+        //iml_x = projection_preconditioner.solve(iml_b); int converged = 0;
+        //std::cout << "error " << norm(projection_precond_operator * iml_b - iml_b) << std::endl;
 
 //        int converged = GMRES(iml_operator, iml_x, iml_b, empty_preconditioner, iml_matrix, gmres_m, max_iter, tol);
 //        int converged = GMRES(iml_operator, iml_x, iml_b, diag_preconditioner, iml_matrix, gmres_m, max_iter, tol);
 //        int converged = GMRES(iml_operator, iml_x, iml_b, projection_preconditioner, iml_matrix, gmres_m, max_iter, tol);
-        int converged = GMRES(test_matrix, iml_x, projection_preconditioner.solve(iml_b), empty_preconditioner, iml_matrix, gmres_m, max_iter, tol);
+//        int converged = GMRES(test_matrix, iml_x, projection_preconditioner.solve(iml_b), empty_preconditioner, iml_matrix, gmres_m, max_iter, tol);
 
 //          int converged = GMRES(test_matrix, iml_x, diag_preconditioner.solve(iml_b), empty_preconditioner, iml_matrix, gmres_m, max_iter, tol);
 //        int converged = GMRES(diag_precond_operator, iml_x, diag_preconditioner.solve(iml_b), empty_preconditioner, iml_matrix, gmres_m, max_iter, tol);
