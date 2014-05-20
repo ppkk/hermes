@@ -29,7 +29,7 @@ const int P_INIT = 1;
 // Number of initial uniform mesh refinements.
 const int INIT_REF_NUM = 2;
 
-const int REFERENCE_ORDER_INCREASE = 2;
+const int REFERENCE_ORDER_INCREASE = 0;
 // This is a quantitative parameter of the adapt(...) function and
 // it has different meanings for various adaptive strategies.
 const double THRESHOLD = 0.9;
@@ -44,6 +44,9 @@ Adapt<double> adaptivity(&errorCalculator, &stoppingCriterion);
 const CandList CAND_LIST = H2D_H_ISO;
 // Stopping criterion for adaptivity.
 const double ERR_STOP = 1e-1;
+
+// interpolate or project?
+bool interpolate = true;
 
 // Problem parameters.
 // Slope of the layer.
@@ -193,6 +196,62 @@ public:
 
 };
 
+void project_or_interpolate(SpaceSharedPtr<double> orig_space, MeshFunctionSharedPtr<double> orig_solution, SpaceSharedPtr<double> target_space, double* target_sln_vec)
+{
+    if(interpolate)
+    {
+        assert(0);
+        //project_or_interpolate(orig_space, orig_solution, target_space, target_sln_vec);
+    }
+    else
+    {
+        OGProjection<double>::project_global(target_space, orig_solution, target_sln_vec);
+    }
+}
+
+void project_or_interpolate(SpaceSharedPtr<double> orig_space, MeshFunctionSharedPtr<double> orig_solution, SpaceSharedPtr<double> target_space, SimpleVector<double>* target_sln_vec)
+{
+    if(interpolate)
+    {
+        assert(0);
+        //orig_solution.get_solution()->get_v
+        //project_or_interpolate(orig_space, orig_solution, target_space, target_sln_vec);
+    }
+    else
+    {
+        OGProjection<double>::project_global(target_space, orig_solution, target_sln_vec);
+    }
+}
+
+
+void project_or_interpolate(SpaceSharedPtr<double> orig_space, double* orig_sln_vec, SpaceSharedPtr<double> target_space, SimpleVector<double>* target_sln_vec)
+{
+    if(interpolate)
+    {
+        VertexBasedInterpolation<double>::interpolate(orig_space, orig_sln_vec, target_space, target_sln_vec->v);
+    }
+    else
+    {
+        MeshFunctionSharedPtr<double> tmp_solution(new Solution<double>);
+        Solution<double>::vector_to_solution(orig_sln_vec, orig_space, tmp_solution);
+        project_or_interpolate(orig_space, tmp_solution, target_space, target_sln_vec);
+    }
+}
+
+void project_or_interpolate(SpaceSharedPtr<double> orig_space, double* orig_sln_vec, SpaceSharedPtr<double> target_space, double* target_sln_vec)
+{
+    if(interpolate)
+    {
+        VertexBasedInterpolation<double>::interpolate(orig_space, orig_sln_vec, target_space, target_sln_vec);
+    }
+    else
+    {
+        MeshFunctionSharedPtr<double> tmp_solution(new Solution<double>);
+        Solution<double>::vector_to_solution(orig_sln_vec, orig_space, tmp_solution);
+        project_or_interpolate(orig_space, tmp_solution, target_space, target_sln_vec);
+    }
+}
+
 void test_projections(SpaceSharedPtr<double> coarse_space, SpaceSharedPtr<double> fine_space)
 {
     Views::ScalarView sview_original("Original", new Views::WinGeom(0, 800, 440, 350));
@@ -225,15 +284,15 @@ void test_projections(SpaceSharedPtr<double> coarse_space, SpaceSharedPtr<double
         vec[i] = 1.;
 
         projection.zero();
-        Solution<double>::vector_to_solution(vec, fine_space, tmp_solution);
-        OGProjection<double>::project_global(coarse_space, tmp_solution, &projection);
+        project_or_interpolate(fine_space, vec, coarse_space, &projection);
         for(int j = 0; j < n_coarse; j++)
             coarsen(j, i) = projection.v[j];
 
-//        sview_original.show(tmp_solution);
-//        Solution<double>::vector_to_solution(projection.v, coarse_space, tmp_solution);
-//        sview_projection.show(tmp_solution);
-        //getchar();
+        Solution<double>::vector_to_solution(vec, fine_space, tmp_solution);
+        sview_original.show(tmp_solution);
+        Solution<double>::vector_to_solution(projection.v, coarse_space, tmp_solution);
+        sview_projection.show(tmp_solution);
+        getchar();
     }
 
     IMLMatrix refine(n_fine, n_coarse);
@@ -245,21 +304,21 @@ void test_projections(SpaceSharedPtr<double> coarse_space, SpaceSharedPtr<double
         vec[i] = 1.;
 
         projection.zero();
-        Solution<double>::vector_to_solution(vec, coarse_space, tmp_solution);
-        OGProjection<double>::project_global(fine_space, tmp_solution, &projection);
+        project_or_interpolate(coarse_space, vec, fine_space, &projection);
         for(int j = 0; j < n_fine; j++)
             refine(j, i) = projection.v[j];
 
-//        sview_original.show(tmp_solution);
-//        Solution<double>::vector_to_solution(projection.v, fine_space, tmp_solution);
-//        sview_projection.show(tmp_solution);
-        //getchar();
+        Solution<double>::vector_to_solution(vec, coarse_space, tmp_solution);
+        sview_original.show(tmp_solution);
+        Solution<double>::vector_to_solution(projection.v, fine_space, tmp_solution);
+        sview_projection.show(tmp_solution);
+       getchar();
     }
 
     projection.alloc(n_coarse);
     memset(vec, 0, n_fine*sizeof(double));
     for(int i = 0; i < n_fine; i++)
-        vec[i] = 1;//i%4;
+        vec[i] = i%4; //1
     IMLVector iml_vec;
     iml_vec.set(vec, n_fine);
     Solution<double>::vector_to_solution(vec, fine_space, tmp_solution);
@@ -273,12 +332,12 @@ void test_projections(SpaceSharedPtr<double> coarse_space, SpaceSharedPtr<double
     std::cout << " je projekce linearni? : " << norm(iml_vec_2 - iml_projection) << std::endl;
     Solution<double>::vector_to_solution(iml_vec_2.m_data, coarse_space, tmp_solution);
     sview_projection_by_matrix.show(tmp_solution);
-    //getchar();
+    getchar();
 
     projection.alloc(n_fine);
     memset(vec, 0, n_coarse*sizeof(double));
     for(int i = 0; i < n_coarse; i++)
-        vec[i] = 1;//i%4;
+        vec[i] = i%4; //1
     iml_vec.set(vec, n_coarse);
     Solution<double>::vector_to_solution(vec, coarse_space, tmp_solution);
     sview_original.show(tmp_solution);
@@ -291,12 +350,12 @@ void test_projections(SpaceSharedPtr<double> coarse_space, SpaceSharedPtr<double
     std::cout << " je projekce linearni? : " << norm(iml_vec_2 - iml_projection) << std::endl;
     Solution<double>::vector_to_solution(iml_vec_2.m_data, fine_space, tmp_solution);
     sview_projection_by_matrix.show(tmp_solution);
-    //getchar();
+    getchar();
 
     coarsen.print_sparse("/home/pkus/matlab/multigrid/restrict.m", "R");
     refine.print_sparse("/home/pkus/matlab/multigrid/interpolate.m", "I");
 
-    //getchar();
+    getchar();
 }
 
 
