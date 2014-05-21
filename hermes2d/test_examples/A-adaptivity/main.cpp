@@ -277,11 +277,13 @@ void test_projections(SpaceSharedPtr<double> coarse_space, SpaceSharedPtr<double
     SimpleVector<double> projection;
     MeshFunctionSharedPtr<double> tmp_solution(new Solution<double>);
     projection.alloc(n_coarse);
-    double vec[n_fine];
-    Hermes2D::Views::BaseView<double> b;
-    b.get_linearizer()->set_criterion(Views::LinearizerCriterionFixed(4));
-    b.show(fine_space);
-    b.wait_for_close();
+
+//    Hermes2D::Views::BaseView<double> b;
+//    b.get_linearizer()->set_criterion(Views::LinearizerCriterionFixed(4));
+//    b.show(fine_space);
+//    b.wait_for_close();
+
+    double* vec = new double[n_fine];
     for(int i = 0; i < n_fine; i++)
     {
         memset(vec, 0, n_fine*sizeof(double));
@@ -301,7 +303,7 @@ void test_projections(SpaceSharedPtr<double> coarse_space, SpaceSharedPtr<double
 
     IMLMatrix refine(n_fine, n_coarse);
     projection.alloc(n_fine);
-    double vec2[n_coarse];
+    double* vec2 = new double[n_coarse];
     for(int i = 0; i < n_coarse; i++)
     {
         memset(vec, 0, n_coarse*sizeof(double));
