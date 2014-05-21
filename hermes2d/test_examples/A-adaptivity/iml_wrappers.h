@@ -337,9 +337,9 @@ public:
             assert(nrows == ncols);
             int size = nrows;
             int nnz = size*size;
-            int ap[size+1];
-            int ai[nnz];
-            double ax[nnz];
+            int* ap = new int[size+1];
+            int* ai = new int[nnz];
+            double* ax = new double[nnz];
 
             for(int i = 0; i <= size; i++)
             {
@@ -390,9 +390,9 @@ public:
 
     void print_sparse(const char* filename, const char* varname)
     {
-        int rows[nrows*ncols];
-        int cols[nrows*ncols];
-        double vals[nrows*ncols];
+      int* rows = new int[nrows*ncols];
+      int* cols = new int[nrows*ncols];
+      double* vals = new double[nrows*ncols];
 
         int nnz = 0;
         for(int row = 0; row < nrows; row++)

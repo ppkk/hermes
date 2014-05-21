@@ -30,7 +30,8 @@ void GeneratePlaneRotation(Real &dx, Real &dy, Real &cs, Real &sn)
   if (dy == 0.0) {
     cs = 1.0;
     sn = 0.0;
-  } else if (abs(dy) > abs(dx)) {
+  }
+  else if (abs<double>(dy) > abs<double>(dx)) {
     Real temp = dx / dy;
     sn = 1.0 / std::sqrt( 1.0 + temp*temp );
     cs = temp * sn;
@@ -125,7 +126,7 @@ GMRES(const Operator &A, Vector &x, const Vector &b,
       ApplyPlaneRotation(H(i,i), H(i+1,i), cs(i), sn(i));
       ApplyPlaneRotation(s(i), s(i+1), cs(i), sn(i));
 
-      if ((resid = abs(s(i+1)) / normb) < tol) {
+      if ((resid = abs<double>(s(i+1)) / normb) < tol) {
         Update(x, i, H, s, v);
         tol = resid;
         max_iter = j;
