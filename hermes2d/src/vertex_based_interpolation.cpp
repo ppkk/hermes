@@ -41,7 +41,9 @@ namespace Hermes
         for (unsigned char edge = 0; edge < current_state->rep->nvert; edge++)
         {
           typename Space<Scalar>::NodeData* out_nd = out_space->ndata + current_state->e[1]->vn[edge]->id;
-          if (current_state->e[0]->vn[edge]->id == current_state->e[1]->vn[edge]->id && out_space->ndata[current_state->e[1]->vn[edge]->id].n == 1)
+          if (out_nd->vertex_bc_coef != nullptr)
+            continue;
+          if (current_state->e[0]->vn[edge]->id == current_state->e[1]->vn[edge]->id && out_space->ndata[current_state->e[1]->vn[edge]->id].n == 1 && src_space->ndata[current_state->e[0]->vn[edge]->id].n == 1)
           {
             typename Space<Scalar>::NodeData* src_nd = src_space->ndata + current_state->e[0]->vn[edge]->id;
             if (src_space->ndata[current_state->e[0]->vn[edge]->id].n == 1 && src_nd->dof >= 0)
@@ -49,7 +51,7 @@ namespace Hermes
           }
           else
           {
-            Func<Scalar>* func = (dynamic_cast<Solution<Scalar>*>(src_fn.get()))->get_pt_value(current_state->e[1]->vn[edge]->x, current_state->e[1]->vn[edge]->y, true, current_state->e[0]);
+            Func<Scalar>* func = (dynamic_cast<Solution<Scalar>*>(src_fn.get()))->get_pt_value(current_state->e[1]->vn[edge]->x, current_state->e[1]->vn[edge]->y);
             out_sln_vector[out_nd->dof] = func->val[0];
           }
         }
