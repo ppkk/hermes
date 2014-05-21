@@ -278,6 +278,10 @@ void test_projections(SpaceSharedPtr<double> coarse_space, SpaceSharedPtr<double
     MeshFunctionSharedPtr<double> tmp_solution(new Solution<double>);
     projection.alloc(n_coarse);
     double vec[n_fine];
+    Hermes2D::Views::BaseView<double> b;
+    b.get_linearizer()->set_criterion(Views::LinearizerCriterionFixed(4));
+    b.show(fine_space);
+    b.wait_for_close();
     for(int i = 0; i < n_fine; i++)
     {
         memset(vec, 0, n_fine*sizeof(double));
@@ -292,7 +296,7 @@ void test_projections(SpaceSharedPtr<double> coarse_space, SpaceSharedPtr<double
         sview_original.show(tmp_solution);
         Solution<double>::vector_to_solution(projection.v, coarse_space, tmp_solution);
         sview_projection.show(tmp_solution);
-        getchar();
+        //getchar();
     }
 
     IMLMatrix refine(n_fine, n_coarse);
@@ -312,7 +316,7 @@ void test_projections(SpaceSharedPtr<double> coarse_space, SpaceSharedPtr<double
         sview_original.show(tmp_solution);
         Solution<double>::vector_to_solution(projection.v, fine_space, tmp_solution);
         sview_projection.show(tmp_solution);
-       getchar();
+       //getchar();
     }
 
     projection.alloc(n_coarse);
@@ -410,7 +414,7 @@ int main(int argc, char* argv[])
   EssentialBCs<double> bcs(&bc_essential);
 
   // Create an H1 space with default shapeset.
-  SpaceSharedPtr<double> space(new H1Space<double>(mesh, &bcs, P_INIT));
+  SpaceSharedPtr<double> space(new H1Space<double>(mesh, NULL, P_INIT));
   SpaceSharedPtr<double> last_directly_solved_space(new H1Space<double>());
   MeshSharedPtr last_directly_solved_mesh(new Mesh);
   
