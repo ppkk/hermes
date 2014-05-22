@@ -263,9 +263,9 @@ void test_projections(SpaceSharedPtr<double> coarse_space, SpaceSharedPtr<double
     Views::ScalarView sview_projection_by_matrix("Projection by matrix", new Views::WinGeom(950, 800, 440, 350));
     sview_projection_by_matrix.show_mesh(true);
     sview_projection_by_matrix.fix_scale_width(50);
-    sview_original.set_min_max_range(minr,maxr);
-    sview_projection.set_min_max_range(minr,maxr);
-    sview_projection_by_matrix.set_min_max_range(minr,maxr);
+//    sview_original.set_min_max_range(minr,maxr);
+//    sview_projection.set_min_max_range(minr,maxr);
+//    sview_projection_by_matrix.set_min_max_range(minr,maxr);
     sview_original.get_linearizer()->set_criterion(lincrit);
     sview_projection.get_linearizer()->set_criterion(lincrit);
     sview_projection_by_matrix.get_linearizer()->set_criterion(lincrit);
@@ -294,11 +294,11 @@ void test_projections(SpaceSharedPtr<double> coarse_space, SpaceSharedPtr<double
         for(int j = 0; j < n_coarse; j++)
             coarsen(j, i) = projection.v[j];
 
-        Solution<double>::vector_to_solution(vec, fine_space, tmp_solution);
-        sview_original.show(tmp_solution);
-        Solution<double>::vector_to_solution(projection.v, coarse_space, tmp_solution);
-        sview_projection.show(tmp_solution);
-        //getchar();
+//        Solution<double>::vector_to_solution(vec, fine_space, tmp_solution);
+//        sview_original.show(tmp_solution);
+//        Solution<double>::vector_to_solution(projection.v, coarse_space, tmp_solution);
+//        sview_projection.show(tmp_solution);
+//        getchar();
     }
 
     IMLMatrix refine(n_fine, n_coarse);
@@ -318,7 +318,7 @@ void test_projections(SpaceSharedPtr<double> coarse_space, SpaceSharedPtr<double
         sview_original.show(tmp_solution);
         Solution<double>::vector_to_solution(projection.v, fine_space, tmp_solution);
         sview_projection.show(tmp_solution);
-       //getchar();
+        getchar();
     }
 
     projection.alloc(n_coarse);
@@ -329,12 +329,15 @@ void test_projections(SpaceSharedPtr<double> coarse_space, SpaceSharedPtr<double
     iml_vec.set(vec, n_fine);
     Solution<double>::vector_to_solution(vec, fine_space, tmp_solution);
     sview_original.show(tmp_solution);
-    OGProjection<double>::project_global(coarse_space, tmp_solution, &projection);
+    project_or_interpolate(fine_space, vec, coarse_space, &projection);
     Solution<double>::vector_to_solution(projection.v, coarse_space, tmp_solution);
     sview_projection.show(tmp_solution);
     IMLVector iml_projection;
     iml_projection.set(&projection);
     IMLVector iml_vec_2 = coarsen * iml_vec;
+    std::cout << "vzor " << iml_vec << std::endl;
+    std::cout << "obraz " << iml_vec_2 << std::endl;
+    std::cout << "interpolace " << iml_projection << std::endl;
     std::cout << " je projekce linearni? : " << norm(iml_vec_2 - iml_projection) << std::endl;
     Solution<double>::vector_to_solution(iml_vec_2.m_data, coarse_space, tmp_solution);
     sview_projection_by_matrix.show(tmp_solution);
@@ -347,12 +350,15 @@ void test_projections(SpaceSharedPtr<double> coarse_space, SpaceSharedPtr<double
     iml_vec.set(vec, n_coarse);
     Solution<double>::vector_to_solution(vec, coarse_space, tmp_solution);
     sview_original.show(tmp_solution);
-    OGProjection<double>::project_global(fine_space, tmp_solution, &projection);
+    project_or_interpolate(coarse_space, vec, fine_space, &projection);
     Solution<double>::vector_to_solution(projection.v, fine_space, tmp_solution);
     sview_projection.show(tmp_solution);
     iml_projection.set(&projection);
     iml_vec_2.alloc(n_fine);
     iml_vec_2 = refine * iml_vec;
+    std::cout << "vzor " << iml_vec << std::endl;
+    std::cout << "obraz " << iml_vec_2 << std::endl;
+    std::cout << "interpolace " << iml_projection << std::endl;
     std::cout << " je projekce linearni? : " << norm(iml_vec_2 - iml_projection) << std::endl;
     Solution<double>::vector_to_solution(iml_vec_2.m_data, fine_space, tmp_solution);
     sview_projection_by_matrix.show(tmp_solution);
@@ -416,7 +422,7 @@ int main(int argc, char* argv[])
   EssentialBCs<double> bcs(&bc_essential);
 
   // Create an H1 space with default shapeset.
-  SpaceSharedPtr<double> space(new H1Space<double>(mesh, NULL, P_INIT));
+  SpaceSharedPtr<double> space(new H1Space<double>(mesh, &bcs, P_INIT));
   SpaceSharedPtr<double> last_directly_solved_space(new H1Space<double>());
   MeshSharedPtr last_directly_solved_mesh(new Mesh);
   

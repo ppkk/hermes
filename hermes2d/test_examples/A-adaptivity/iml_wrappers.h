@@ -291,6 +291,20 @@ public:
             delete umfpack_solver;
     }
 
+    IMLMatrix transpose()
+    {
+        IMLMatrix result(ncols, nrows);
+        for(int col = 0; col < ncols; col++)
+        {
+            for(int row = 0; row < nrows; row++)
+            {
+                result(col, row) = (*this)(row, col);
+            }
+        }
+
+        return result;
+    }
+
     double& operator() (int i, int j)
     {
         assert( (i >= 0) && (i < nrows) && (j >= 0) && (j < ncols) );

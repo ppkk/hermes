@@ -31,7 +31,7 @@ void GeneratePlaneRotation(Real &dx, Real &dy, Real &cs, Real &sn)
     cs = 1.0;
     sn = 0.0;
   }
-  else if (abs<double>(dy) > abs<double>(dx)) {
+  else if (abs(dy) > abs(dx)) {
     Real temp = dx / dy;
     sn = 1.0 / std::sqrt( 1.0 + temp*temp );
     cs = temp * sn;
