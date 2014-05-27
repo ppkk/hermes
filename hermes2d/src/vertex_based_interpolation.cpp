@@ -21,11 +21,11 @@ namespace Hermes
   namespace Hermes2D
   {
     template<typename Scalar>
-    void VertexBasedInterpolation<Scalar>::interpolate(SpaceSharedPtr<Scalar> src_space, Scalar* src_sln_vector, SpaceSharedPtr<Scalar> out_space, Scalar*& out_sln_vector)
+    void VertexBasedInterpolation<Scalar>::interpolate(SpaceSharedPtr<Scalar> src_space, Scalar* src_sln_vector, SpaceSharedPtr<Scalar> out_space, Scalar*& out_sln_vector, bool include_dirichlet)
     {
       out_sln_vector = calloc_with_check<Scalar>(out_space->get_num_dofs());
       MeshFunctionSharedPtr<Scalar> src_fn(new Solution<Scalar>(src_space->get_mesh()));
-      Solution<Scalar>::vector_to_solution(src_sln_vector, src_space, src_fn);
+      Solution<Scalar>::vector_to_solution(src_sln_vector, src_space, src_fn, include_dirichlet);
 
       // Initialize states && previous iterations.
       int num_states;

@@ -30,7 +30,7 @@ namespace Hermes
     {
     public:
       /// This method allows to specify your own OG-projection form.
-      static void interpolate(SpaceSharedPtr<Scalar> src_space, Scalar* src_sln_vector, SpaceSharedPtr<Scalar> out_space, Scalar*& out_sln_vector);
+      static void interpolate(SpaceSharedPtr<Scalar> src_space, Scalar* src_sln_vector, SpaceSharedPtr<Scalar> out_space, Scalar*& out_sln_vector, bool include_dirichlet = true);
     };
   }
 }
