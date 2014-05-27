@@ -404,6 +404,7 @@ public:
 
     void print_sparse(const char* filename, const char* varname)
     {
+      return;
       int* rows = new int[nrows*ncols];
       int* cols = new int[nrows*ncols];
       double* vals = new double[nrows*ncols];

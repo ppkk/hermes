@@ -228,7 +228,7 @@ void project_or_interpolate(SpaceSharedPtr<double> orig_space, double* orig_sln_
 {
     if(interpolate)
     {
-        VertexBasedInterpolation<double>::interpolate(orig_space, orig_sln_vec, target_space, target_sln_vec->v);
+      VertexBasedInterpolation<double>::interpolate(orig_space, orig_sln_vec, target_space, target_sln_vec->v, false);
     }
     else
     {
@@ -238,11 +238,11 @@ void project_or_interpolate(SpaceSharedPtr<double> orig_space, double* orig_sln_
     }
 }
 
-void project_or_interpolate(SpaceSharedPtr<double> orig_space, double* orig_sln_vec, SpaceSharedPtr<double> target_space, double* target_sln_vec)
+void project_or_interpolate(SpaceSharedPtr<double> orig_space, double* orig_sln_vec, SpaceSharedPtr<double> target_space, double*& target_sln_vec)
 {
     if(interpolate)
     {
-        VertexBasedInterpolation<double>::interpolate(orig_space, orig_sln_vec, target_space, target_sln_vec);
+        VertexBasedInterpolation<double>::interpolate(orig_space, orig_sln_vec, target_space, target_sln_vec, false);
     }
     else
     {
@@ -274,9 +274,8 @@ void test_projections(SpaceSharedPtr<double> coarse_space, SpaceSharedPtr<double
     int n_fine = fine_space->get_num_dofs();
 
     IMLMatrix coarsen(n_coarse, n_fine);
-    SimpleVector<double> projection;
+    double* projection;
     MeshFunctionSharedPtr<double> tmp_solution(new Solution<double>);
-    projection.alloc(n_coarse);
 
 //    Hermes2D::Views::BaseView<double> b;
 //    b.get_linearizer()->set_criterion(Views::LinearizerCriterionFixed(4));
@@ -289,85 +288,85 @@ void test_projections(SpaceSharedPtr<double> coarse_space, SpaceSharedPtr<double
         memset(vec, 0, n_fine*sizeof(double));
         vec[i] = 1.;
 
-        projection.zero();
-        project_or_interpolate(fine_space, vec, coarse_space, &projection);
+        project_or_interpolate(fine_space, vec, coarse_space, projection);
         for(int j = 0; j < n_coarse; j++)
-            coarsen(j, i) = projection.v[j];
+            coarsen(j, i) = projection[j];
 
 //        Solution<double>::vector_to_solution(vec, fine_space, tmp_solution);
 //        sview_original.show(tmp_solution);
 //        Solution<double>::vector_to_solution(projection.v, coarse_space, tmp_solution);
 //        sview_projection.show(tmp_solution);
 //        getchar();
+        // Tohle mi nejak pada, ale melo by to tady byt: free_with_check(projection);
     }
 
     IMLMatrix refine(n_fine, n_coarse);
-    projection.alloc(n_fine);
     double* vec2 = new double[n_coarse];
     for(int i = 0; i < n_coarse; i++)
     {
         memset(vec, 0, n_coarse*sizeof(double));
         vec[i] = 1.;
 
-        projection.zero();
-        project_or_interpolate(coarse_space, vec, fine_space, &projection);
+        project_or_interpolate(coarse_space, vec, fine_space, projection);
         for(int j = 0; j < n_fine; j++)
-            refine(j, i) = projection.v[j];
+            refine(j, i) = projection[j];
 
-        Solution<double>::vector_to_solution(vec, coarse_space, tmp_solution);
-        sview_original.show(tmp_solution);
-        Solution<double>::vector_to_solution(projection.v, fine_space, tmp_solution);
-        sview_projection.show(tmp_solution);
-        getchar();
+        //Solution<double>::vector_to_solution(vec, coarse_space, tmp_solution, false);
+        //sview_original.show(tmp_solution);
+        //Solution<double>::vector_to_solution(projection, fine_space, tmp_solution, false);
+        //sview_projection.show(tmp_solution);
+        //getchar();
+        // Tohle mi nejak pada, ale melo by to tady byt: free_with_check(projection);
     }
 
-    projection.alloc(n_coarse);
     memset(vec, 0, n_fine*sizeof(double));
     for(int i = 0; i < n_fine; i++)
         vec[i] = i%4; //1
     IMLVector iml_vec;
     iml_vec.set(vec, n_fine);
-    Solution<double>::vector_to_solution(vec, fine_space, tmp_solution);
+    Solution<double>::vector_to_solution(vec, fine_space, tmp_solution, false);
     sview_original.show(tmp_solution);
-    project_or_interpolate(fine_space, vec, coarse_space, &projection);
-    Solution<double>::vector_to_solution(projection.v, coarse_space, tmp_solution);
+    project_or_interpolate(fine_space, vec, coarse_space, projection);
+    Solution<double>::vector_to_solution(projection, coarse_space, tmp_solution, false);
     sview_projection.show(tmp_solution);
     IMLVector iml_projection;
-    iml_projection.set(&projection);
+    iml_projection.set(projection, n_coarse);
     IMLVector iml_vec_2 = coarsen * iml_vec;
     std::cout << "vzor " << iml_vec << std::endl;
     std::cout << "obraz " << iml_vec_2 << std::endl;
     std::cout << "interpolace " << iml_projection << std::endl;
     std::cout << " je projekce linearni? : " << norm(iml_vec_2 - iml_projection) << std::endl;
-    Solution<double>::vector_to_solution(iml_vec_2.m_data, coarse_space, tmp_solution);
+    Solution<double>::vector_to_solution(iml_vec_2.m_data, coarse_space, tmp_solution, false);
     sview_projection_by_matrix.show(tmp_solution);
-    getchar();
+    // Tohle mi nejak pada, ale melo by to tady byt: free_with_check(projection);
+    //getchar();
 
-    projection.alloc(n_fine);
     memset(vec, 0, n_coarse*sizeof(double));
     for(int i = 0; i < n_coarse; i++)
         vec[i] = i%4; //1
     iml_vec.set(vec, n_coarse);
-    Solution<double>::vector_to_solution(vec, coarse_space, tmp_solution);
+    Solution<double>::vector_to_solution(vec, coarse_space, tmp_solution, false);
     sview_original.show(tmp_solution);
-    project_or_interpolate(coarse_space, vec, fine_space, &projection);
-    Solution<double>::vector_to_solution(projection.v, fine_space, tmp_solution);
+    project_or_interpolate(coarse_space, vec, fine_space, projection);
+    Solution<double>::vector_to_solution(projection, fine_space, tmp_solution, false);
     sview_projection.show(tmp_solution);
-    iml_projection.set(&projection);
+    iml_projection.set(projection, n_fine);
     iml_vec_2.alloc(n_fine);
     iml_vec_2 = refine * iml_vec;
     std::cout << "vzor " << iml_vec << std::endl;
     std::cout << "obraz " << iml_vec_2 << std::endl;
     std::cout << "interpolace " << iml_projection << std::endl;
     std::cout << " je projekce linearni? : " << norm(iml_vec_2 - iml_projection) << std::endl;
-    Solution<double>::vector_to_solution(iml_vec_2.m_data, fine_space, tmp_solution);
+    Solution<double>::vector_to_solution(iml_vec_2.m_data, fine_space, tmp_solution, false);
     sview_projection_by_matrix.show(tmp_solution);
-    getchar();
+    // Tohle mi nejak pada, ale melo by to tady byt: free_with_check(projection);
+    //getchar();
 
     coarsen.print_sparse("/home/pkus/matlab/multigrid/restrict.m", "R");
     refine.print_sparse("/home/pkus/matlab/multigrid/interpolate.m", "I");
 
-    getchar();
+    Views::View::wait_for_keypress();
+    //getchar();
 }
 
 
