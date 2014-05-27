@@ -292,11 +292,11 @@ void test_projections(SpaceSharedPtr<double> coarse_space, SpaceSharedPtr<double
         for(int j = 0; j < n_coarse; j++)
             coarsen(j, i) = projection[j];
 
-//        Solution<double>::vector_to_solution(vec, fine_space, tmp_solution);
-//        sview_original.show(tmp_solution);
-//        Solution<double>::vector_to_solution(projection.v, coarse_space, tmp_solution);
-//        sview_projection.show(tmp_solution);
-//        getchar();
+        Solution<double>::vector_to_solution(vec, fine_space, tmp_solution);
+        sview_original.show(tmp_solution);
+        Solution<double>::vector_to_solution(projection, coarse_space, tmp_solution);
+        sview_projection.show(tmp_solution);
+        Views::View::wait_for_keypress();
         // Tohle mi nejak pada, ale melo by to tady byt: free_with_check(projection);
     }
 
@@ -311,11 +311,11 @@ void test_projections(SpaceSharedPtr<double> coarse_space, SpaceSharedPtr<double
         for(int j = 0; j < n_fine; j++)
             refine(j, i) = projection[j];
 
-        //Solution<double>::vector_to_solution(vec, coarse_space, tmp_solution, false);
-        //sview_original.show(tmp_solution);
-        //Solution<double>::vector_to_solution(projection, fine_space, tmp_solution, false);
-        //sview_projection.show(tmp_solution);
-        //getchar();
+        Solution<double>::vector_to_solution(vec, coarse_space, tmp_solution);
+        sview_original.show(tmp_solution);
+        Solution<double>::vector_to_solution(projection, fine_space, tmp_solution);
+        sview_projection.show(tmp_solution);
+        Views::View::wait_for_keypress();
         // Tohle mi nejak pada, ale melo by to tady byt: free_with_check(projection);
     }
 
@@ -332,14 +332,14 @@ void test_projections(SpaceSharedPtr<double> coarse_space, SpaceSharedPtr<double
     IMLVector iml_projection;
     iml_projection.set(projection, n_coarse);
     IMLVector iml_vec_2 = coarsen * iml_vec;
-    std::cout << "vzor " << iml_vec << std::endl;
-    std::cout << "obraz " << iml_vec_2 << std::endl;
-    std::cout << "interpolace " << iml_projection << std::endl;
+//    std::cout << "vzor " << iml_vec << std::endl;
+//    std::cout << "obraz " << iml_vec_2 << std::endl;
+//    std::cout << "interpolace " << iml_projection << std::endl;
     std::cout << " je projekce linearni? : " << norm(iml_vec_2 - iml_projection) << std::endl;
     Solution<double>::vector_to_solution(iml_vec_2.m_data, coarse_space, tmp_solution, false);
     sview_projection_by_matrix.show(tmp_solution);
     // Tohle mi nejak pada, ale melo by to tady byt: free_with_check(projection);
-    //getchar();
+    Views::View::wait_for_keypress();
 
     memset(vec, 0, n_coarse*sizeof(double));
     for(int i = 0; i < n_coarse; i++)
@@ -353,20 +353,17 @@ void test_projections(SpaceSharedPtr<double> coarse_space, SpaceSharedPtr<double
     iml_projection.set(projection, n_fine);
     iml_vec_2.alloc(n_fine);
     iml_vec_2 = refine * iml_vec;
-    std::cout << "vzor " << iml_vec << std::endl;
-    std::cout << "obraz " << iml_vec_2 << std::endl;
-    std::cout << "interpolace " << iml_projection << std::endl;
+//    std::cout << "vzor " << iml_vec << std::endl;
+//    std::cout << "obraz " << iml_vec_2 << std::endl;
+//    std::cout << "interpolace " << iml_projection << std::endl;
     std::cout << " je projekce linearni? : " << norm(iml_vec_2 - iml_projection) << std::endl;
     Solution<double>::vector_to_solution(iml_vec_2.m_data, fine_space, tmp_solution, false);
     sview_projection_by_matrix.show(tmp_solution);
     // Tohle mi nejak pada, ale melo by to tady byt: free_with_check(projection);
-    //getchar();
-
-    coarsen.print_sparse("/home/pkus/matlab/multigrid/restrict.m", "R");
-    refine.print_sparse("/home/pkus/matlab/multigrid/interpolate.m", "I");
 
     Views::View::wait_for_keypress();
-    //getchar();
+//    coarsen.print_sparse("/home/pkus/matlab/multigrid/restrict.m", "R");
+//    refine.print_sparse("/home/pkus/matlab/multigrid/interpolate.m", "I");
 }
 
 
@@ -418,6 +415,7 @@ int main(int argc, char* argv[])
   
   // Initialize boundary conditions
   DefaultEssentialBCNonConst<double> bc_essential("Bdy", exact_sln);
+  //DefaultEssentialBCConst<double> bc_essential("Bdy", 0);
   EssentialBCs<double> bcs(&bc_essential);
 
   // Create an H1 space with default shapeset.
@@ -458,7 +456,7 @@ int main(int argc, char* argv[])
   int as = 1; bool done = false;
   do
   {
-      if(as == 8) break;
+      //if(as == 8) break;
     cpu_time.tick();
 
     // Construct globally refined reference mesh and setup reference space.
@@ -536,7 +534,7 @@ int main(int argc, char* argv[])
     {
         int converged = 0;
         test_projections(last_directly_solved_space, ref_space);
-        test_projection_precond(projection_preconditioner, projection_precond_operator);
+        //test_projection_precond(projection_preconditioner, projection_precond_operator);
 
         Hermes::Mixins::Loggable::Static::info("+++++++ adaptivity step %d -> using     ITERATIVE    solver", as);
         x.alloc(rhs_fine.get_size());
@@ -549,7 +547,7 @@ int main(int argc, char* argv[])
         IMLOperatorToMatrix(projection_precond_operator, dense_precond_matrix);
         IMLVector iml_prec_b = projection_preconditioner.solve(iml_b);
 
-        iml_x = dense_precond_matrix.solve_gmres(iml_prec_b);
+        //iml_x = dense_precond_matrix.solve_gmres(iml_prec_b);
 //        std::cout << "b : \n";
 //        std::cout << iml_b << std::endl;
 //        std::cout << "precond b : \n";
@@ -564,21 +562,21 @@ int main(int argc, char* argv[])
         //iml_x = projection_preconditioner.solve(iml_b); int converged = 0;
         //std::cout << "error " << norm(projection_precond_operator * iml_b - iml_b) << std::endl;
 
-//        int converged = GMRES(iml_operator, iml_x, iml_b, empty_preconditioner, iml_matrix, gmres_m, max_iter, tol);
-//        int converged = GMRES(iml_operator, iml_x, iml_b, diag_preconditioner, iml_matrix, gmres_m, max_iter, tol);
-//        int converged = GMRES(iml_operator, iml_x, iml_b, projection_preconditioner, iml_matrix, gmres_m, max_iter, tol);
-//        int converged = GMRES(test_matrix, iml_x, projection_preconditioner.solve(iml_b), empty_preconditioner, iml_matrix, gmres_m, max_iter, tol);
+//        converged = GMRES(iml_operator, iml_x, iml_b, empty_preconditioner, iml_matrix, gmres_m, max_iter, tol);
+//        converged = GMRES(iml_operator, iml_x, iml_b, diag_preconditioner, iml_matrix, gmres_m, max_iter, tol);
+//        converged = GMRES(iml_operator, iml_x, iml_b, projection_preconditioner, iml_matrix, gmres_m, max_iter, tol);
+//        converged = GMRES(test_matrix, iml_x, projection_preconditioner.solve(iml_b), empty_preconditioner, iml_matrix, gmres_m, max_iter, tol);
 
-//          int converged = GMRES(test_matrix, iml_x, diag_preconditioner.solve(iml_b), empty_preconditioner, iml_matrix, gmres_m, max_iter, tol);
-//        int converged = GMRES(diag_precond_operator, iml_x, diag_preconditioner.solve(iml_b), empty_preconditioner, iml_matrix, gmres_m, max_iter, tol);
-//        int converged = GMRES(projection_precond_operator, iml_x, projection_preconditioner.solve(iml_b), empty_preconditioner, iml_matrix, gmres_m, max_iter, tol);
+//          converged = GMRES(test_matrix, iml_x, diag_preconditioner.solve(iml_b), empty_preconditioner, iml_matrix, gmres_m, max_iter, tol);
+//        converged = GMRES(diag_precond_operator, iml_x, diag_preconditioner.solve(iml_b), empty_preconditioner, iml_matrix, gmres_m, max_iter, tol);
+//        converged = GMRES(projection_precond_operator, iml_x, projection_preconditioner.solve(iml_b), empty_preconditioner, iml_matrix, gmres_m, max_iter, tol);
 
-//        int converged = CG(iml_operator, iml_x, iml_b, empty_preconditioner, max_iter, tol);
-//        int converged = CG(iml_operator, iml_x, iml_b, diag_preconditioner, max_iter, tol);
-//        int converged = CG(iml_operator, iml_x, iml_b, projection_preconditioner, max_iter, tol);
+//        converged = CG(iml_operator, iml_x, iml_b, empty_preconditioner, max_iter, tol);
+//        converged = CG(iml_operator, iml_x, iml_b, diag_preconditioner, max_iter, tol);
+//        converged = CG(iml_operator, iml_x, iml_b, projection_preconditioner, max_iter, tol);
 
-//        int converged = CG(projection_precond_operator, iml_x, projection_preconditioner.solve(iml_b), empty_preconditioner, max_iter, tol);
-//        int converged = CG(diag_precond_operator, iml_x, diag_preconditioner.solve(iml_b), empty_preconditioner, max_iter, tol);
+//        converged = CG(projection_precond_operator, iml_x, projection_preconditioner.solve(iml_b), empty_preconditioner, max_iter, tol);
+        converged = CG(diag_precond_operator, iml_x, diag_preconditioner.solve(iml_b), empty_preconditioner, max_iter, tol);
         iml_x.copy(&x);
         Hermes::Mixins::Loggable::Static::info("CG converged %d, tol %g, steps %d, ndofs %d", converged, tol, max_iter, ndof_ref);
         Solution<double>::vector_to_solution(x.v, ref_space, ref_sln);
