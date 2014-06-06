@@ -30,7 +30,7 @@
 #include "quadrature/limit_order.h"
 
 #include "api2d.h"
-#include "vertex_based_interpolation.h"
+#include "interpolation.h"
 #include "sub_element_map.h"
 #include "mixins2d.h"
 
