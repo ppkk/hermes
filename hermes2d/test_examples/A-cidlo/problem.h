@@ -22,12 +22,14 @@ struct ProblemDefinition
     double EPS_AIR, EPS_KARTIT, EPS_FULL, EPS_EMPTY;
     double POTENTIAL;
     int ACTIVE_ELECTRODE;
+    char mesh_name[30];
 };
 
 struct ProblemDefinition_1 : ProblemDefinition
 {
     ProblemDefinition_1(double eps_rel_material, ProblemConfiguration configuration)
     {
+        strcpy(mesh_name, "mesh_cidlo.msh");
         EPS_AIR = EPS0;
         EPS_EMPTY = EPS0;
         EPS_FULL = eps_rel_material * EPS0;
