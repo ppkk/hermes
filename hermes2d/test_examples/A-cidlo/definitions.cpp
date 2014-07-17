@@ -23,6 +23,40 @@ CustomWeakFormPermitivity::CustomWeakFormPermitivity(ProblemDefinition definitio
 }
 
 
+WeakFormChangingPermInFull::WeakFormChangingPermInFull(ProblemDefinition definition, Perms perms, PGDSolutions pgd_solutions) : Hermes::Hermes2D::WeakForm<double>(1)
+{
+    assert(pgd_solutions.parameters.size() == pgd_solutions.solutions.size() + 1);
+
+    // Jacobian forms.
+    double w1_air = perms.EPS_AIR * pgd_solutions.parameters.back().int_F_F();
+    double w1_kartit = perms.EPS_KARTIT * pgd_solutions.parameters.back().int_F_F();
+    double w1_empty = perms.EPS_EMPTY * pgd_solutions.parameters.back().int_F_F();
+    double w1_full = pgd_solutions.parameters.back().int_x_F_F();
+    add_matrix_form(new WeakFormsH1::DefaultMatrixFormDiffusion<double>(0, 0, definition.labels_air, new Hermes1DFunction<double>(w1_air)));
+    add_matrix_form(new WeakFormsH1::DefaultMatrixFormDiffusion<double>(0, 0, definition.labels_kartit, new Hermes1DFunction<double>(w1_kartit)));
+    add_matrix_form(new WeakFormsH1::DefaultMatrixFormDiffusion<double>(0, 0, definition.labels_full, new Hermes1DFunction<double>(w1_full)));
+    add_matrix_form(new WeakFormsH1::DefaultMatrixFormDiffusion<double>(0, 0, definition.labels_empty, new Hermes1DFunction<double>(w1_empty)));
+
+    // Residual forms.
+    std::vector<double> w2_air;
+    std::vector<double> w2_kartit;
+    std::vector<double> w2_empty;
+    std::vector<double> w2_full;
+
+    for(int i = 0; i < pgd_solutions.solutions.size(); i++)
+    {
+        w2_air.push_back(perms.EPS_AIR * pgd_solutions.parameters.back().int_F_ExtF(pgd_solutions.parameters[i]));
+        w2_kartit.push_back(perms.EPS_KARTIT * pgd_solutions.parameters.back().int_F_ExtF(pgd_solutions.parameters[i]));
+        w2_empty.push_back(perms.EPS_EMPTY * pgd_solutions.parameters.back().int_F_ExtF(pgd_solutions.parameters[i]));
+        w2_full.push_back(pgd_solutions.parameters.back().int_x_F_ExtF(pgd_solutions.parameters[i]));
+    }
+
+    add_vector_form(new GradPreviousSolsTimesGradTest(0, definition.labels_air, w2_air));
+    add_vector_form(new GradPreviousSolsTimesGradTest(0, definition.labels_kartit, w2_kartit));
+    add_vector_form(new GradPreviousSolsTimesGradTest(0, definition.labels_full, w2_full));
+    add_vector_form(new GradPreviousSolsTimesGradTest(0, definition.labels_empty, w2_empty));
+}
+
 GradPreviousSolsTimesGradTest::GradPreviousSolsTimesGradTest(int i, Hermes::vector<std::string> areas, std::vector<double> coeffs)
     : VectorFormVol<double>(i), idx_i(i), coeffs(coeffs)
 {
