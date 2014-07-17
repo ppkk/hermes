@@ -10,7 +10,7 @@ const int INIT_REF_NUM = 1;               // Number of initial uniform mesh refi
 // Problem parameters.
 
 
-MeshFunctionSharedPtr<double> solve_problem(ProblemDefinition definition, MeshSharedPtr mesh)
+MeshFunctionSharedPtr<double> solve_problem(ProblemDefinition definition, Perms perms, MeshSharedPtr mesh)
 {
     // Initialize essential boundary conditions.
     Hermes::Hermes2D::DefaultEssentialBCConst<double> bc_essential_ground(definition.bc_ground, 0);
@@ -20,7 +20,7 @@ MeshFunctionSharedPtr<double> solve_problem(ProblemDefinition definition, MeshSh
     SpaceSharedPtr<double> space(new Hermes::Hermes2D::H1Space<double>(mesh, &bcs, P_INIT));
     std::cout << "Ndofs: " << space->get_num_dofs() << std::endl;
 
-    CustomWeakFormPoisson wf(definition);
+    CustomWeakFormPoisson wf(definition, perms);
     MeshFunctionSharedPtr<double> sln(new Solution<double>);
     Hermes::Hermes2D::LinearSolver<double> linear_solver(&wf, space);
 
@@ -42,10 +42,10 @@ MeshFunctionSharedPtr<double> solve_problem(ProblemDefinition definition, MeshSh
     }
 }
 
-MeshFunctionSharedPtr<double> solve_permitivity(ProblemDefinition definition, MeshSharedPtr mesh)
+MeshFunctionSharedPtr<double> solve_permitivity(ProblemDefinition definition, Perms perms, MeshSharedPtr mesh)
 {
     SpaceSharedPtr<double> space_perm(new Hermes::Hermes2D::H1Space<double>(mesh, nullptr, 3));
-    CustomWeakFormPermitivity wf_perm(definition);
+    CustomWeakFormPermitivity wf_perm(definition, perms);
     MeshFunctionSharedPtr<double> sln_perm(new Solution<double>);
     Hermes::Hermes2D::LinearSolver<double> linear_solver_perm(&wf_perm, space_perm);
 
@@ -66,9 +66,9 @@ MeshFunctionSharedPtr<double> solve_permitivity(ProblemDefinition definition, Me
     }
 }
 
-double calc_integral(MeshFunctionSharedPtr<double> sln, ProblemDefinition definition)
+double calc_integral(MeshFunctionSharedPtr<double> sln, ProblemDefinition definition, Perms perms)
 {
-    MyVolumetricIntegralCalculator integralCalculator(sln, definition);
+    MyVolumetricIntegralCalculator integralCalculator(sln, definition, perms);
     double* result = new double[1];
     result = integralCalculator.calculate(HERMES_ANY);
     double res = result[0];
@@ -78,12 +78,21 @@ double calc_integral(MeshFunctionSharedPtr<double> sln, ProblemDefinition defini
 
 int main(int argc, char* argv[])
 {
-    Hermes::vector<int> profile_coarse(0,0,0,0,0,0,0,0,0,5);
-    int active_electrode = 7;
-    double eps_rel_material = 5;
+
+    Function1D fn(0., 1., 2);
+    fn.values[0] = 1;
+    fn.values[1] = 2;
+    fn.values[2] = 1;
+    fn.print();
+    std::cout << fn.int_F_F() << std::endl;
+    std::cout << fn.value(0.9) << std::endl;
+    Hermes::vector<int> profile_coarse(0,0,16,16,16,16,0,0);
+    int active_electrode = 4;
+    double eps_rel_material = 2;
 
     ProblemConfiguration configuration(profile_coarse, active_electrode);
-    ProblemDefinition_1 definition(eps_rel_material, configuration);
+    StandardPerms perms(eps_rel_material);
+    ProblemDefinition_1 definition(configuration);
 
     // Load the mesh.
     MeshSharedPtr mesh(new Mesh);
@@ -94,18 +103,18 @@ int main(int argc, char* argv[])
     for (unsigned int i = 0; i < INIT_REF_NUM; i++)
         mesh->refine_all_elements();
 
-    MeshFunctionSharedPtr<double> sln = solve_problem(definition, mesh);
-    MeshFunctionSharedPtr<double> sln_perm = solve_permitivity(definition, mesh);
+    MeshFunctionSharedPtr<double> sln = solve_problem(definition, perms, mesh);
+    MeshFunctionSharedPtr<double> sln_perm = solve_permitivity(definition, perms, mesh);
 
-    std::cout << "Integral is " << calc_integral(sln, definition) << std::endl;
+    std::cout << "Integral is " << calc_integral(sln, definition, perms) << std::endl;
 
     // Visualize the solution.
     Hermes::Hermes2D::Views::ScalarView viewS("Solution", new Hermes::Hermes2D::Views::WinGeom(0, 0, 1500, 700));
     Hermes::Hermes2D::Views::ScalarView viewP("Permitivity", new Hermes::Hermes2D::Views::WinGeom(0, 700, 1500, 700));
     //    Hermes::Hermes2D::Views::OrderView viewSp("Space", new Hermes::Hermes2D::Views::WinGeom(0, 600, 1200, 600));
     //    viewSp.show(space);
-    viewS.show(sln);
     viewP.show(sln_perm);
+    viewS.show(sln);
     viewS.wait_for_close();
     return 0;
 }
