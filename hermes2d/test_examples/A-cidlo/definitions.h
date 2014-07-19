@@ -60,10 +60,10 @@ private:
   std::vector<double> coeffs;
 };
 
-class MyVolumetricIntegralCalculator : public PostProcessing::VolumetricIntegralCalculator<double>
+class EnergyIntegralCalculator : public PostProcessing::VolumetricIntegralCalculator<double>
 {
 public:
-    MyVolumetricIntegralCalculator(MeshFunctionSharedPtr<double> source_function, ProblemDefinition definition, Perms perms) :
+    EnergyIntegralCalculator(MeshFunctionSharedPtr<double> source_function, ProblemDefinition definition, Perms perms) :
         PostProcessing::VolumetricIntegralCalculator<double>(source_function, 1), definition(definition)
     {
         //memset(label_to_eps, 0, MAX_LABELS * sizeof(double));
@@ -107,5 +107,25 @@ public:
     ProblemDefinition definition;
     static const int MAX_LABELS = 5000;
     double label_to_eps[MAX_LABELS];
+};
+
+class GradUGradVIngegralCalculator : public PostProcessing::VolumetricIntegralCalculator<double>
+{
+public:
+    GradUGradVIngegralCalculator(Hermes::vector<MeshFunctionSharedPtr<double> > source_functions) :
+        PostProcessing::VolumetricIntegralCalculator<double>(source_functions, 1)
+    {
+    }
+
+    virtual void integral(int n, double* wt, Func<double> **fns, Geom<double> *e, double* result)
+    {
+        for (int i = 0; i < n; i++){
+            result[0] += wt[i] * (fns[0]->dx[i]* fns[1]->dx[i] + fns[0]->dy[i]* fns[1]->dy[i]);
+        }
+    };
+
+    virtual void order(Func<Hermes::Ord> **fns, Hermes::Ord* result) {
+        result[0] = Hermes::Ord(21);
+    }
 
 };

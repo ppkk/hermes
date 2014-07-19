@@ -4,17 +4,23 @@
 
 CustomWeakFormPoisson::CustomWeakFormPoisson(ProblemDefinition definition, Perms perms) : Hermes::Hermes2D::WeakForm<double>(1)
 {
-  // Jacobian forms.
+  // Matrix forms.
     add_matrix_form(new Hermes::Hermes2D::WeakFormsH1::DefaultMatrixFormDiffusion<double>(0, 0, definition.labels_air, new Hermes::Hermes1DFunction<double>(perms.EPS_AIR)));
     add_matrix_form(new Hermes::Hermes2D::WeakFormsH1::DefaultMatrixFormDiffusion<double>(0, 0, definition.labels_kartit, new Hermes::Hermes1DFunction<double>(perms.EPS_KARTIT)));
     add_matrix_form(new Hermes::Hermes2D::WeakFormsH1::DefaultMatrixFormDiffusion<double>(0, 0, definition.labels_full, new Hermes::Hermes1DFunction<double>(perms.EPS_FULL)));
     add_matrix_form(new Hermes::Hermes2D::WeakFormsH1::DefaultMatrixFormDiffusion<double>(0, 0, definition.labels_empty, new Hermes::Hermes1DFunction<double>(perms.EPS_EMPTY)));
+
+    //Vector forms - for electrostatic should be removed(coeff = 0)
+    add_vector_form(new Hermes::Hermes2D::WeakFormsH1::DefaultVectorFormVol<double>(0, Hermes::HERMES_ANY, new Hermes::Hermes2DFunction<double>(definition.SOURCE_TERM)));
+
 }
 
 CustomWeakFormPermitivity::CustomWeakFormPermitivity(ProblemDefinition definition, Perms perms) : Hermes::Hermes2D::WeakForm<double>(1)
 {
-  // Jacobian forms.
+    // Matrix forms.
     add_matrix_form(new Hermes::Hermes2D::WeakFormsH1::DefaultMatrixFormVol<double>(0, 0));
+
+    //Vector forms
     add_vector_form(new Hermes::Hermes2D::WeakFormsH1::DefaultVectorFormVol<double>(0, definition.labels_air, new Hermes::Hermes2DFunction<double>(perms.EPS_AIR/EPS0)));
     add_vector_form(new Hermes::Hermes2D::WeakFormsH1::DefaultVectorFormVol<double>(0, definition.labels_kartit, new Hermes::Hermes2DFunction<double>(perms.EPS_KARTIT/EPS0)));
     add_vector_form(new Hermes::Hermes2D::WeakFormsH1::DefaultVectorFormVol<double>(0, definition.labels_full, new Hermes::Hermes2DFunction<double>(perms.EPS_FULL/EPS0)));
@@ -27,7 +33,6 @@ WeakFormChangingPermInFull::WeakFormChangingPermInFull(ProblemDefinition definit
 {
     assert(pgd_solutions.parameters.size() == pgd_solutions.solutions.size() + 1);
 
-    // Jacobian forms.
     double w1_air = perms.EPS_AIR * pgd_solutions.parameters.back().int_F_F();
     double w1_kartit = perms.EPS_KARTIT * pgd_solutions.parameters.back().int_F_F();
     double w1_empty = perms.EPS_EMPTY * pgd_solutions.parameters.back().int_F_F();
@@ -70,6 +75,7 @@ GradPreviousSolsTimesGradTest::~GradPreviousSolsTimesGradTest()
 double GradPreviousSolsTimesGradTest::value(int n, double *wt, Func<double> *u_ext[], Func<double> *v,
                                            Geom<double> *e, Func<double> **ext) const
 {
+    assert(0); // ext functions have to be pushed
     double result = 0;
     for (int i = 0; i < n; i++) {
         double value = 0;

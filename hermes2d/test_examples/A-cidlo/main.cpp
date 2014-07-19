@@ -13,8 +13,8 @@ const int INIT_REF_NUM = 1;               // Number of initial uniform mesh refi
 MeshFunctionSharedPtr<double> solve_problem(ProblemDefinition definition, Perms perms, MeshSharedPtr mesh)
 {
     // Initialize essential boundary conditions.
-    Hermes::Hermes2D::DefaultEssentialBCConst<double> bc_essential_ground(definition.bc_ground, 0);
-    Hermes::Hermes2D::DefaultEssentialBCConst<double> bc_essential_potential(definition.bc_potential, definition.POTENTIAL);
+    Hermes::Hermes2D::DefaultEssentialBCConst<double> bc_essential_ground(definition.bc_labels_ground, 0);
+    Hermes::Hermes2D::DefaultEssentialBCConst<double> bc_essential_potential(definition.bc_labels_potential, definition.POTENTIAL);
     Hermes::Hermes2D::EssentialBCs<double> bcs(Hermes::vector<EssentialBoundaryCondition<double> *> (&bc_essential_ground, &bc_essential_potential));
 
     SpaceSharedPtr<double> space(new Hermes::Hermes2D::H1Space<double>(mesh, &bcs, P_INIT));
@@ -66,14 +66,44 @@ MeshFunctionSharedPtr<double> solve_permitivity(ProblemDefinition definition, Pe
     }
 }
 
-double calc_integral(MeshFunctionSharedPtr<double> sln, ProblemDefinition definition, Perms perms)
+double calc_integral_energy(MeshFunctionSharedPtr<double> sln, ProblemDefinition definition, Perms perms)
 {
-    MyVolumetricIntegralCalculator integralCalculator(sln, definition, perms);
+    EnergyIntegralCalculator integralCalculator(sln, definition, perms);
     double* result = new double[1];
     result = integralCalculator.calculate(HERMES_ANY);
     double res = result[0];
     delete[] result;
     return res;
+}
+
+double calc_integral_grad_u_grad_v(MeshFunctionSharedPtr<double> sln1, MeshFunctionSharedPtr<double> sln2, Hermes::vector<std::string> area)
+{
+    GradUGradVIngegralCalculator integralCalculator(Hermes::vector<MeshFunctionSharedPtr<double> >(sln1, sln2));
+    double* result = new double[1];
+    result = integralCalculator.calculate(area);
+    double res = result[0];
+    delete[] result;
+    return res;
+}
+
+void update_fn_1d(PGDSolutions pgd_solutions)
+{
+    // the last pair solutions/parameters is the actually calculated
+    // the last parameter will be replaced by the now calculated (next iteration)
+    assert(pgd_solutions.solutions.size() == pgd_solutions.parameters.size());
+    double a = 0;
+    double b = 0;
+    double c = 0;
+    double d = 0;
+    
+    MeshFunctionSharedPtr<double> solutionR;
+    int num_previous_solutions = pgd_solutions.solutions.size() - 1;
+    
+    
+    for(int i = 0; i < pgd_solutions.solutions.size(); i++)
+    {
+        //b += calc_integral_grad_u_grad_v()
+    }
 }
 
 int main(int argc, char* argv[])
@@ -87,12 +117,18 @@ int main(int argc, char* argv[])
     std::cout << fn.int_F_F() << std::endl;
     std::cout << fn.value(0.9) << std::endl;
     Hermes::vector<int> profile_coarse(0,0,16,16,16,16,0,0);
+
     int active_electrode = 4;
-    double eps_rel_material = 2;
+    double eps_rel_material = 20;
 
     ProblemConfiguration configuration(profile_coarse, active_electrode);
     StandardPerms perms(eps_rel_material);
     ProblemDefinition_1 definition(configuration);
+
+    // first solve for homogeneous BC only!
+    definition.POTENTIAL = 0.0;
+    definition.SOURCE_TERM = 1.0;
+
 
     // Load the mesh.
     MeshSharedPtr mesh(new Mesh);
@@ -106,7 +142,8 @@ int main(int argc, char* argv[])
     MeshFunctionSharedPtr<double> sln = solve_problem(definition, perms, mesh);
     MeshFunctionSharedPtr<double> sln_perm = solve_permitivity(definition, perms, mesh);
 
-    std::cout << "Integral is " << calc_integral(sln, definition, perms) << std::endl;
+
+    std::cout << "Integral is " << calc_integral_energy(sln, definition, perms) << std::endl;
 
     // Visualize the solution.
     Hermes::Hermes2D::Views::ScalarView viewS("Solution", new Hermes::Hermes2D::Views::WinGeom(0, 0, 1500, 700));

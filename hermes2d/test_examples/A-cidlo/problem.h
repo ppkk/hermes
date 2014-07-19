@@ -133,8 +133,9 @@ struct Function1D
 struct ProblemDefinition
 {
     Hermes::vector<std::string> labels_air, labels_kartit, labels_full, labels_empty;
-    Hermes::vector<std::string> bc_ground, bc_potential;
+    Hermes::vector<std::string> bc_labels_ground, bc_labels_potential;
     double POTENTIAL;
+    double SOURCE_TERM;
     char mesh_name[30];
 };
 
@@ -145,6 +146,7 @@ struct ProblemDefinition_1 : ProblemDefinition
         strcpy(mesh_name, "mesh_cidlo.msh");
 
         POTENTIAL = 1.0;
+        SOURCE_TERM = 0.0;
 
         int electrodes[8][4] = {{16, 17, 18, 19},
                                 {20, 27, 28, 29},
@@ -159,20 +161,20 @@ struct ProblemDefinition_1 : ProblemDefinition
 
         // zemnici elektroda
         for(int i = 50; i <= 129; i++)
-            bc_ground.push_back(std::to_string(i));
+            bc_labels_ground.push_back(std::to_string(i));
 
         // klec
         for(int i = 10; i <= 15; i++)
-            bc_ground.push_back(std::to_string(i));
+            bc_labels_ground.push_back(std::to_string(i));
 
         for(int el_idx = 0; el_idx < 8; el_idx++)
         {
             for(int j = 0; j < 4; j++)
             {
                 if(el_idx == configuration.active_electrode)
-                    bc_potential.push_back(std::to_string(electrodes[el_idx][j]));
+                    bc_labels_potential.push_back(std::to_string(electrodes[el_idx][j]));
                 else
-                    bc_ground.push_back(std::to_string(electrodes[el_idx][j]));
+                    bc_labels_ground.push_back(std::to_string(electrodes[el_idx][j]));
             }
         }
 
