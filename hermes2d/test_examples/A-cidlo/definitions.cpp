@@ -43,10 +43,7 @@ WeakFormChangingPermInFull::WeakFormChangingPermInFull(ProblemDefinition definit
     add_matrix_form(new WeakFormsH1::DefaultMatrixFormDiffusion<double>(0, 0, definition.labels_empty, new Hermes1DFunction<double>(w1_empty)));
 
     // Residual forms.
-    std::vector<double> w2_air;
-    std::vector<double> w2_kartit;
-    std::vector<double> w2_empty;
-    std::vector<double> w2_full;
+    std::vector<double> w2_air, w2_kartit, w2_empty, w2_full;
 
     for(int i = 0; i < pgd_solutions.solutions.size(); i++)
     {
@@ -60,6 +57,10 @@ WeakFormChangingPermInFull::WeakFormChangingPermInFull(ProblemDefinition definit
     add_vector_form(new GradPreviousSolsTimesGradTest(0, definition.labels_kartit, w2_kartit));
     add_vector_form(new GradPreviousSolsTimesGradTest(0, definition.labels_full, w2_full));
     add_vector_form(new GradPreviousSolsTimesGradTest(0, definition.labels_empty, w2_empty));
+
+    // RHS residual forms
+    std::vector<double> w3_air, w3_kartit, w3_empty, w3_full;
+
 }
 
 GradPreviousSolsTimesGradTest::GradPreviousSolsTimesGradTest(int i, Hermes::vector<std::string> areas, std::vector<double> coeffs)

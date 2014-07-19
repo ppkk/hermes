@@ -129,3 +129,27 @@ public:
     }
 
 };
+
+class U_times_f_IngegralCalculator : public PostProcessing::VolumetricIntegralCalculator<double>
+{
+public:
+    U_times_f_IngegralCalculator(MeshFunctionSharedPtr<double> source_function, double coeff) :
+        PostProcessing::VolumetricIntegralCalculator<double>(source_function, 1), coeff(coeff)
+    {
+    }
+
+    virtual void integral(int n, double* wt, Func<double> **fns, Geom<double> *e, double* result)
+    {
+        for (int i = 0; i < n; i++){
+            result[0] += wt[i] * (fns[0]->val[i]);
+        }
+        result[0] *= coeff;
+    };
+
+    virtual void order(Func<Hermes::Ord> **fns, Hermes::Ord* result) {
+        result[0] = Hermes::Ord(21);
+    }
+
+    double coeff;
+
+};

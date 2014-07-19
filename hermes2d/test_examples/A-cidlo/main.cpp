@@ -86,24 +86,54 @@ double calc_integral_grad_u_grad_v(MeshFunctionSharedPtr<double> sln1, MeshFunct
     return res;
 }
 
-void update_fn_1d(PGDSolutions pgd_solutions)
+double calc_integral_u_f(MeshFunctionSharedPtr<double> sln, double coeff)
+{
+    U_times_f_IngegralCalculator integralCalculator(sln, coeff);
+    double* result = new double[1];
+    result = integralCalculator.calculate(HERMES_ANY);
+    double res = result[0];
+    delete[] result;
+    return res;
+}
+
+void update_fn_1d(PGDSolutions pgd_solutions, ProblemDefinition definition, Perms perms)
 {
     // the last pair solutions/parameters is the actually calculated
     // the last parameter will be replaced by the now calculated (next iteration)
     assert(pgd_solutions.solutions.size() == pgd_solutions.parameters.size());
     double a = 0;
-    double b = 0;
-    double c = 0;
-    double d = 0;
+    double b = 0;   //a*eps + b
+    double c = 0;   //---------
+    double d = 0;   //c*eps + d
     
-    MeshFunctionSharedPtr<double> solutionR;
     int num_previous_solutions = pgd_solutions.solutions.size() - 1;
+    assert(num_previous_solutions >= 0);
+    MeshFunctionSharedPtr<double> solutionR = pgd_solutions.solutions.back();
     
-    
-    for(int i = 0; i < pgd_solutions.solutions.size(); i++)
+    b += calc_integral_u_f(solutionR, definition.SOURCE_TERM);
+    for(int i = 0; i < num_previous_solutions; i++)
     {
-        //b += calc_integral_grad_u_grad_v()
+        a -= calc_integral_grad_u_grad_v(solutionR, pgd_solutions.solutions.at(i), definition.labels_full);
+
+        b -= perms.EPS_AIR * calc_integral_grad_u_grad_v(solutionR, pgd_solutions.solutions.at(i), definition.labels_air);
+        b -= perms.EPS_KARTIT * calc_integral_grad_u_grad_v(solutionR, pgd_solutions.solutions.at(i), definition.labels_kartit);
+        b -= perms.EPS_EMPTY * calc_integral_grad_u_grad_v(solutionR, pgd_solutions.solutions.at(i), definition.labels_empty);
     }
+
+    c += calc_integral_grad_u_grad_v(solutionR, solutionR, definition.labels_full);
+
+    d += perms.EPS_AIR * calc_integral_grad_u_grad_v(solutionR, solutionR, definition.labels_air);
+    d += perms.EPS_KARTIT * calc_integral_grad_u_grad_v(solutionR, solutionR, definition.labels_kartit);
+    d += perms.EPS_EMPTY * calc_integral_grad_u_grad_v(solutionR, solutionR, definition.labels_empty);
+
+    Function1D lastIterParam = pgd_solutions.parameters.back();
+    Function1D newParam(lastIterParam.bound_lo, lastIterParam.bound_hi, lastIterParam.n_intervals);
+    pgd_solutions.parameters.pop_back();
+    for(int i = 0; i < newParam.n_points; i++)
+    {
+        newParam.values[i] = (a*newParam.points[i] + b) / (c*newParam.points[i] + d);
+    }
+    pgd_solutions.parameters.push_back(newParam);
 }
 
 int main(int argc, char* argv[])
