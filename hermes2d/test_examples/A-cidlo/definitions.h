@@ -16,28 +16,10 @@ public:
     CustomWeakFormPermitivity(ProblemDefinition definition, Perms perms);
 };
 
-struct PGDSolutions
-{
-    std::vector<Function1D> parameters;
-    std::vector<MeshFunctionSharedPtr<double> > solutions;
-
-    double get_pt_value(double x, double y, double eps)
-    {
-        assert(solutions.size() == parameters.size());
-        double result = 0;
-        for(int i = 0; i < solutions.size(); i++)
-        {
-            result += parameters.at(i).value(eps) * solutions.at(i)->get_pt_value(x, y)->val[0];
-        }
-
-        return result;
-    }
-};
-
 class WeakFormChangingPermInFull : public Hermes::Hermes2D::WeakForm<double>
 {
 public:
-    WeakFormChangingPermInFull(ProblemDefinition definition, Perms perms, PGDSolutions pgd_solutions);
+    WeakFormChangingPermInFull(const PGDSolutions* pgd_sols);
 };
 
 class GradPreviousSolsTimesGradTest : public VectorFormVol<double>

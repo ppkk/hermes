@@ -96,44 +96,126 @@ double calc_integral_u_f(MeshFunctionSharedPtr<double> sln, double coeff)
     return res;
 }
 
-void update_fn_1d(PGDSolutions pgd_solutions, ProblemDefinition definition, Perms perms)
+Function1D PGDSolutions::iteration_update_parameter()
 {
-    // the last pair solutions/parameters is the actually calculated
-    // the last parameter will be replaced by the now calculated (next iteration)
-    assert(pgd_solutions.solutions.size() == pgd_solutions.parameters.size());
+    assert(solutions.size() == parameters.size());
     double a = 0;
     double b = 0;   //a*eps + b
     double c = 0;   //---------
     double d = 0;   //c*eps + d
     
-    int num_previous_solutions = pgd_solutions.solutions.size() - 1;
-    assert(num_previous_solutions >= 0);
-    MeshFunctionSharedPtr<double> solutionR = pgd_solutions.solutions.back();
-    
-    b += calc_integral_u_f(solutionR, definition.SOURCE_TERM);
-    for(int i = 0; i < num_previous_solutions; i++)
+    try
     {
-        a -= calc_integral_grad_u_grad_v(solutionR, pgd_solutions.solutions.at(i), definition.labels_full);
+        b += calc_integral_u_f(actual_solution, definition.SOURCE_TERM);
+        for(int i = 0; i < solutions.size(); i++)
+        {
+            a -= calc_integral_grad_u_grad_v(actual_solution, solutions.at(i), definition.labels_full);
 
-        b -= perms.EPS_AIR * calc_integral_grad_u_grad_v(solutionR, pgd_solutions.solutions.at(i), definition.labels_air);
-        b -= perms.EPS_KARTIT * calc_integral_grad_u_grad_v(solutionR, pgd_solutions.solutions.at(i), definition.labels_kartit);
-        b -= perms.EPS_EMPTY * calc_integral_grad_u_grad_v(solutionR, pgd_solutions.solutions.at(i), definition.labels_empty);
+            b -= perms.EPS_AIR * calc_integral_grad_u_grad_v(actual_solution, solutions.at(i), definition.labels_air);
+            b -= perms.EPS_KARTIT * calc_integral_grad_u_grad_v(actual_solution, solutions.at(i), definition.labels_kartit);
+            b -= perms.EPS_EMPTY * calc_integral_grad_u_grad_v(actual_solution, solutions.at(i), definition.labels_empty);
+        }
+
+        c += calc_integral_grad_u_grad_v(actual_solution, actual_solution, definition.labels_full);
+
+        d += perms.EPS_AIR * calc_integral_grad_u_grad_v(actual_solution, actual_solution, definition.labels_air);
+        d += perms.EPS_KARTIT * calc_integral_grad_u_grad_v(actual_solution, actual_solution, definition.labels_kartit);
+        d += perms.EPS_EMPTY * calc_integral_grad_u_grad_v(actual_solution, actual_solution, definition.labels_empty);
+    }
+    catch (Exceptions::Exception& e)
+    {
+        std::cout << e.info();
+    }
+    catch (std::exception& e)
+    {
+        std::cout << e.what();
     }
 
-    c += calc_integral_grad_u_grad_v(solutionR, solutionR, definition.labels_full);
-
-    d += perms.EPS_AIR * calc_integral_grad_u_grad_v(solutionR, solutionR, definition.labels_air);
-    d += perms.EPS_KARTIT * calc_integral_grad_u_grad_v(solutionR, solutionR, definition.labels_kartit);
-    d += perms.EPS_EMPTY * calc_integral_grad_u_grad_v(solutionR, solutionR, definition.labels_empty);
-
-    Function1D lastIterParam = pgd_solutions.parameters.back();
-    Function1D newParam(lastIterParam.bound_lo, lastIterParam.bound_hi, lastIterParam.n_intervals);
-    pgd_solutions.parameters.pop_back();
+    Function1D newParam(actual_parameter.bound_lo, actual_parameter.bound_hi, actual_parameter.n_intervals);
     for(int i = 0; i < newParam.n_points; i++)
     {
         newParam.values[i] = (a*newParam.points[i] + b) / (c*newParam.points[i] + d);
     }
-    pgd_solutions.parameters.push_back(newParam);
+    return newParam;
+}
+
+MeshFunctionSharedPtr<double> PGDSolutions::iteration_update_solution()
+{
+    WeakFormChangingPermInFull wf(this);
+
+    // Initialize essential boundary conditions.
+    Hermes::Hermes2D::DefaultEssentialBCConst<double> bc_essential_ground(definition.bc_labels_ground, 0);
+    Hermes::Hermes2D::DefaultEssentialBCConst<double> bc_essential_potential(definition.bc_labels_potential, definition.POTENTIAL);
+    Hermes::Hermes2D::EssentialBCs<double> bcs(Hermes::vector<EssentialBoundaryCondition<double> *> (&bc_essential_ground, &bc_essential_potential));
+
+    SpaceSharedPtr<double> space(new Hermes::Hermes2D::H1Space<double>(mesh, &bcs, P_INIT));
+    std::cout << "Ndofs: " << space->get_num_dofs() << std::endl;
+
+    MeshFunctionSharedPtr<double> sln(new Solution<double>);
+    Hermes::Hermes2D::LinearSolver<double> linear_solver(&wf, space);
+
+    try
+    {
+        linear_solver.solve();
+        double* sln_vector = linear_solver.get_sln_vector();
+
+        Hermes::Hermes2D::Solution<double>::vector_to_solution(sln_vector, space, sln);
+    }
+    catch (Exceptions::Exception& e)
+    {
+        std::cout << e.info();
+    }
+    catch (std::exception& e)
+    {
+        std::cout << e.what();
+    }
+
+    return sln;
+}
+
+void PGDSolutions::find_new_pair()
+{
+    const double MIN_EPS = 1;
+    const double MAX_EPS = 10;
+
+    Function1D func_init(MIN_EPS, MAX_EPS, 20, 1);
+    actual_parameter = func_init;
+
+    Hermes::Hermes2D::Views::ScalarView viewS("Solution", new Hermes::Hermes2D::Views::WinGeom(0, 0, 1500, 700));
+    for(int i = 0; i < 20; i++)
+    {
+        MeshFunctionSharedPtr<double> new_solution = iteration_update_solution();
+        actual_solution = new_solution;
+        viewS.show(actual_solution);
+        Function1D new_parameter = iteration_update_parameter();
+        std::cout << "iteration " << i << ", difference " << new_parameter.diference(actual_parameter) << std::endl;
+        new_parameter.print_short();
+        actual_parameter = new_parameter;
+    }
+}
+
+void pgd_run(ProblemDefinition definition, Perms perms, MeshSharedPtr mesh)
+{
+    PGDSolutions pgd_solutions(definition, perms, mesh);
+    pgd_solutions.find_new_pair();
+}
+
+
+void simple_run(ProblemDefinition definition, Perms perms, MeshSharedPtr mesh)
+{
+    MeshFunctionSharedPtr<double> sln = solve_problem(definition, perms, mesh);
+    MeshFunctionSharedPtr<double> sln_perm = solve_permitivity(definition, perms, mesh);
+
+    std::cout << "Integral is " << calc_integral_energy(sln, definition, perms) << std::endl;
+
+    // Visualize the solution.
+    Hermes::Hermes2D::Views::ScalarView viewS("Solution", new Hermes::Hermes2D::Views::WinGeom(0, 0, 1500, 700));
+    Hermes::Hermes2D::Views::ScalarView viewP("Permitivity", new Hermes::Hermes2D::Views::WinGeom(0, 700, 1500, 700));
+    //    Hermes::Hermes2D::Views::OrderView viewSp("Space", new Hermes::Hermes2D::Views::WinGeom(0, 600, 1200, 600));
+    //    viewSp.show(space);
+    viewP.show(sln_perm);
+    viewS.show(sln);
+    viewS.wait_for_close();
 }
 
 int main(int argc, char* argv[])
@@ -169,19 +251,8 @@ int main(int argc, char* argv[])
     for (unsigned int i = 0; i < INIT_REF_NUM; i++)
         mesh->refine_all_elements();
 
-    MeshFunctionSharedPtr<double> sln = solve_problem(definition, perms, mesh);
-    MeshFunctionSharedPtr<double> sln_perm = solve_permitivity(definition, perms, mesh);
+    //simple_run(definition, perms, mesh);
+    pgd_run(definition, perms, mesh);
 
-
-    std::cout << "Integral is " << calc_integral_energy(sln, definition, perms) << std::endl;
-
-    // Visualize the solution.
-    Hermes::Hermes2D::Views::ScalarView viewS("Solution", new Hermes::Hermes2D::Views::WinGeom(0, 0, 1500, 700));
-    Hermes::Hermes2D::Views::ScalarView viewP("Permitivity", new Hermes::Hermes2D::Views::WinGeom(0, 700, 1500, 700));
-    //    Hermes::Hermes2D::Views::OrderView viewSp("Space", new Hermes::Hermes2D::Views::WinGeom(0, 600, 1200, 600));
-    //    viewSp.show(space);
-    viewP.show(sln_perm);
-    viewS.show(sln);
-    viewS.wait_for_close();
     return 0;
 }
