@@ -4,10 +4,11 @@
 using namespace Hermes;
 using namespace Hermes::Hermes2D;
 
-const int P_INIT = 3;                     // Uniform polynomial degree of mesh elements.
-const int INIT_REF_NUM = 1;               // Number of initial uniform mesh refinements.
+const int P_INIT = 4;                     // Uniform polynomial degree of mesh elements.
+const int INIT_REF_NUM = 3;               // Number of initial uniform mesh refinements.
 
-// Problem parameters.
+const double MIN_EPS = 1 * EPS0;
+const double MAX_EPS = 10 * EPS0;
 
 
 MeshFunctionSharedPtr<double> solve_problem(ProblemDefinition definition, Perms perms, MeshSharedPtr mesh)
@@ -132,6 +133,7 @@ Function1D PGDSolutions::iteration_update_parameter()
     }
 
     Function1D newParam(actual_parameter.bound_lo, actual_parameter.bound_hi, actual_parameter.n_intervals);
+    std::cout <<"(a,b,c,d): " << a << ", " << b << ", " << c << ", " << d << std::endl;
     for(int i = 0; i < newParam.n_points; i++)
     {
         newParam.values[i] = (a*newParam.points[i] + b) / (c*newParam.points[i] + d);
@@ -173,16 +175,14 @@ MeshFunctionSharedPtr<double> PGDSolutions::iteration_update_solution()
     return sln;
 }
 
+Hermes::Hermes2D::Views::ScalarView viewS("Solution", new Hermes::Hermes2D::Views::WinGeom(0, 0, 1500, 700));
+
 void PGDSolutions::find_new_pair()
 {
-    const double MIN_EPS = 1;
-    const double MAX_EPS = 10;
-
     Function1D func_init(MIN_EPS, MAX_EPS, 20, 1);
     actual_parameter = func_init;
 
-    Hermes::Hermes2D::Views::ScalarView viewS("Solution", new Hermes::Hermes2D::Views::WinGeom(0, 0, 1500, 700));
-    for(int i = 0; i < 20; i++)
+    for(int i = 0; i < 10; i++)
     {
         MeshFunctionSharedPtr<double> new_solution = iteration_update_solution();
         actual_solution = new_solution;
@@ -192,14 +192,70 @@ void PGDSolutions::find_new_pair()
         new_parameter.print_short();
         actual_parameter = new_parameter;
     }
+    parameters.push_back(actual_parameter);
+    solutions.push_back(actual_solution);
+
 }
 
-void pgd_run(ProblemDefinition definition, Perms perms, MeshSharedPtr mesh)
+PGDSolutions pgd_run(ProblemDefinition definition, Perms perms, MeshSharedPtr mesh)
 {
+
     PGDSolutions pgd_solutions(definition, perms, mesh);
-    pgd_solutions.find_new_pair();
+    for(int i = 0; i < 5; i++)
+    {
+        pgd_solutions.find_new_pair();
+
+        std::cout << "NUMBER OF SOLS " << pgd_solutions.solutions.size() << std::endl;
+
+        viewS.save_numbered_screenshot("pic/solution%03d.png", i);
+        Function1D last_param = pgd_solutions.parameters.back();
+
+        char filename[30];
+        sprintf(filename, "pic/parameter%03d.dat", i);
+        FILE* file;
+        file = fopen(filename, "w");
+        for(int i = 0; i < last_param.n_points; i++)
+        {
+            fprintf(file, "%g  %g\n", last_param.points[i], last_param.values[i]);
+        }
+        fclose(file);
+    }
+    return pgd_solutions;
 }
 
+const double test_x = 0.2;
+const double test_y = 0.3;
+
+void pgd_results(PGDSolutions pgd_solutions)
+{
+    ProblemDefinition definition = pgd_solutions.definition;
+    Perms perms = pgd_solutions.perms;
+    MeshSharedPtr mesh = pgd_solutions.mesh;
+
+    FILE* file_norm = fopen("pic/normal_calculations.dat", "w");
+    FILE* file_pgd = fopen("pic/pgd_calculations.dat", "w");
+
+    for(double eps = MIN_EPS; eps <= MAX_EPS; eps += (MAX_EPS - MIN_EPS) / 10)
+    {
+        perms.EPS_FULL = eps;
+        MeshFunctionSharedPtr<double> ref_sln = solve_problem(definition, perms, mesh);
+        double val_ref = ref_sln->get_pt_value(test_x, test_y)->val[0];
+        fprintf(file_norm, "%g  %g\n", eps/EPS0, val_ref);
+    }
+    for(double eps = MIN_EPS; eps <= MAX_EPS; eps += (MAX_EPS - MIN_EPS) / 30)
+    {
+        fprintf(file_pgd, "%g  ", eps/EPS0);
+        for(int num_modes = 1; num_modes <= pgd_solutions.solutions.size(); num_modes++)
+        {
+            double val = pgd_solutions.get_pt_value(test_x, test_y, eps, num_modes);
+            fprintf(file_pgd, "%g  ", val);
+        }
+        fprintf(file_pgd, "\n");
+    }
+
+    fclose(file_norm);
+    fclose(file_pgd);
+}
 
 void simple_run(ProblemDefinition definition, Perms perms, MeshSharedPtr mesh)
 {
@@ -228,14 +284,18 @@ int main(int argc, char* argv[])
     fn.print();
     std::cout << fn.int_F_F() << std::endl;
     std::cout << fn.value(0.9) << std::endl;
+    Function1D::test();
+    //assert(0);
+
     Hermes::vector<int> profile_coarse(0,0,16,16,16,16,0,0);
 
     int active_electrode = 4;
-    double eps_rel_material = 20;
+    double eps_rel_material = 7;
 
     ProblemConfiguration configuration(profile_coarse, active_electrode);
     StandardPerms perms(eps_rel_material);
-    ProblemDefinition_1 definition(configuration);
+    //ProblemDefinition_Cidlo_1 definition(configuration);
+    ProblemDefinition_Unit_Square definition(configuration);
 
     // first solve for homogeneous BC only!
     definition.POTENTIAL = 0.0;
@@ -252,7 +312,8 @@ int main(int argc, char* argv[])
         mesh->refine_all_elements();
 
     //simple_run(definition, perms, mesh);
-    pgd_run(definition, perms, mesh);
+    PGDSolutions pgd_solutions = pgd_run(definition, perms, mesh);
+    pgd_results(pgd_solutions);
 
     return 0;
 }

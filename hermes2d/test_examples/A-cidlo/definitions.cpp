@@ -67,6 +67,10 @@ WeakFormChangingPermInFull::WeakFormChangingPermInFull(const PGDSolutions* pgd_s
     double w3 = pgd_sols->actual_parameter.int_F();
     add_vector_form(new WeakFormsH1::DefaultVectorFormVol<double>(0, Hermes::HERMES_ANY, new Hermes::Hermes2DFunction<double>(w3 * pgd_sols->definition.SOURCE_TERM)));
 
+    Hermes::vector<MeshFunctionSharedPtr<double> > previous_sols;
+    for(int i = 0; i < pgd_sols->solutions.size(); i++)
+        previous_sols.push_back(pgd_sols->solutions.at(i));
+    set_ext(previous_sols);
 }
 
 GradPreviousSolsTimesGradTest::GradPreviousSolsTimesGradTest(int i, Hermes::vector<std::string> areas, std::vector<double> coeffs)
@@ -82,7 +86,6 @@ GradPreviousSolsTimesGradTest::~GradPreviousSolsTimesGradTest()
 double GradPreviousSolsTimesGradTest::value(int n, double *wt, Func<double> *u_ext[], Func<double> *v,
                                            Geom<double> *e, Func<double> **ext) const
 {
-    assert(coeffs.size() == 0); // ext functions have to be pushed
     double result = 0;
     for (int i = 0; i < n; i++) {
         double value = 0;

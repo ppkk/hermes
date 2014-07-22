@@ -1,5 +1,5 @@
 #include "hermes2d.h"
-#include "problem.h"
+#include "discretization.h"
 
 using namespace Hermes;
 using namespace Hermes::Hermes2D;
