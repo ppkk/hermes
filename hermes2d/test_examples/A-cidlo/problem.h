@@ -40,13 +40,18 @@ struct ProblemDefinition
     double POTENTIAL;
     double SOURCE_TERM;
     char mesh_name[30];
+    int P_INIT;                     // Uniform polynomial degree of mesh elements.
+    int INIT_REF_NUM;               // Number of initial uniform mesh refinements.
+
 };
 
-struct ProblemDefinition_Cidlo_1 : ProblemDefinition
+struct ProblemDefinitionCidlo1 : ProblemDefinition
 {
-    ProblemDefinition_Cidlo_1(ProblemConfiguration configuration)
+    ProblemDefinitionCidlo1(ProblemConfiguration configuration)
     {
         strcpy(mesh_name, "mesh_cidlo.msh");
+        P_INIT = 3;
+        INIT_REF_NUM = 1;
 
         POTENTIAL = 1.0;
         SOURCE_TERM = 0.0;
@@ -115,11 +120,13 @@ struct ProblemDefinition_Cidlo_1 : ProblemDefinition
     }
 };
 
-struct ProblemDefinition_Unit_Square : ProblemDefinition
+struct ProblemDefinitionUnitSquare : ProblemDefinition
 {
-    ProblemDefinition_Unit_Square(ProblemConfiguration configuration)
+    ProblemDefinitionUnitSquare(ProblemConfiguration configuration)
     {
         strcpy(mesh_name, "mesh_unit_square.msh");
+        P_INIT = 4;
+        INIT_REF_NUM = 3;
 
         POTENTIAL = 1.0;
         SOURCE_TERM = 0.0;
@@ -131,6 +138,28 @@ struct ProblemDefinition_Unit_Square : ProblemDefinition
         bc_labels_ground.push_back("Right");
 
         labels_full.push_back("Full");
+    }
+};
+
+struct ProblemDefinitionUnitSquareDivided : ProblemDefinition
+{
+    ProblemDefinitionUnitSquareDivided(ProblemConfiguration configuration)
+    {
+        strcpy(mesh_name, "mesh_unit_square_divided.msh");
+        P_INIT = 4;
+        INIT_REF_NUM = 3;
+
+        POTENTIAL = 1.0;
+        SOURCE_TERM = 0.0;
+
+        // zemnici elektroda
+        bc_labels_ground.push_back("Bottom");
+        bc_labels_ground.push_back("Top");
+        bc_labels_ground.push_back("Left");
+        bc_labels_ground.push_back("Right");
+
+        labels_full.push_back("Full");
+        labels_air.push_back("Air");
     }
 };
 

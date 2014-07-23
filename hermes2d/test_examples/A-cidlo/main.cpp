@@ -4,11 +4,11 @@
 using namespace Hermes;
 using namespace Hermes::Hermes2D;
 
-const int P_INIT = 4;                     // Uniform polynomial degree of mesh elements.
-const int INIT_REF_NUM = 3;               // Number of initial uniform mesh refinements.
-
 const double MIN_EPS = 1 * EPS0;
 const double MAX_EPS = 10 * EPS0;
+
+const int NUM_STEPS = 5;
+const int NUM_STEP_ITERATIONS = 20;
 
 
 MeshFunctionSharedPtr<double> solve_problem(ProblemDefinition definition, Perms perms, MeshSharedPtr mesh)
@@ -18,7 +18,7 @@ MeshFunctionSharedPtr<double> solve_problem(ProblemDefinition definition, Perms 
     Hermes::Hermes2D::DefaultEssentialBCConst<double> bc_essential_potential(definition.bc_labels_potential, definition.POTENTIAL);
     Hermes::Hermes2D::EssentialBCs<double> bcs(Hermes::vector<EssentialBoundaryCondition<double> *> (&bc_essential_ground, &bc_essential_potential));
 
-    SpaceSharedPtr<double> space(new Hermes::Hermes2D::H1Space<double>(mesh, &bcs, P_INIT));
+    SpaceSharedPtr<double> space(new Hermes::Hermes2D::H1Space<double>(mesh, &bcs, definition.P_INIT));
     std::cout << "Ndofs: " << space->get_num_dofs() << std::endl;
 
     CustomWeakFormPoisson wf(definition, perms);
@@ -150,7 +150,7 @@ MeshFunctionSharedPtr<double> PGDSolutions::iteration_update_solution()
     Hermes::Hermes2D::DefaultEssentialBCConst<double> bc_essential_potential(definition.bc_labels_potential, definition.POTENTIAL);
     Hermes::Hermes2D::EssentialBCs<double> bcs(Hermes::vector<EssentialBoundaryCondition<double> *> (&bc_essential_ground, &bc_essential_potential));
 
-    SpaceSharedPtr<double> space(new Hermes::Hermes2D::H1Space<double>(mesh, &bcs, P_INIT));
+    SpaceSharedPtr<double> space(new Hermes::Hermes2D::H1Space<double>(mesh, &bcs, definition.P_INIT));
     std::cout << "Ndofs: " << space->get_num_dofs() << std::endl;
 
     MeshFunctionSharedPtr<double> sln(new Solution<double>);
@@ -175,6 +175,8 @@ MeshFunctionSharedPtr<double> PGDSolutions::iteration_update_solution()
     return sln;
 }
 
+FILE* convergence_file;
+
 Hermes::Hermes2D::Views::ScalarView viewS("Solution", new Hermes::Hermes2D::Views::WinGeom(0, 0, 1500, 700));
 
 void PGDSolutions::find_new_pair()
@@ -182,16 +184,19 @@ void PGDSolutions::find_new_pair()
     Function1D func_init(MIN_EPS, MAX_EPS, 20, 1);
     actual_parameter = func_init;
 
-    for(int i = 0; i < 10; i++)
+    for(int i = 0; i < NUM_STEP_ITERATIONS; i++)
     {
         MeshFunctionSharedPtr<double> new_solution = iteration_update_solution();
         actual_solution = new_solution;
         viewS.show(actual_solution);
         Function1D new_parameter = iteration_update_parameter();
-        std::cout << "iteration " << i << ", difference " << new_parameter.diference(actual_parameter) << std::endl;
+        double difference = new_parameter.diference(actual_parameter);
+        std::cout << "iteration " << i << ", difference " << difference << std::endl;
+        fprintf(convergence_file, "%g ", difference);
         new_parameter.print_short();
         actual_parameter = new_parameter;
     }
+    fprintf(convergence_file, "\n");
     parameters.push_back(actual_parameter);
     solutions.push_back(actual_solution);
 
@@ -199,9 +204,10 @@ void PGDSolutions::find_new_pair()
 
 PGDSolutions pgd_run(ProblemDefinition definition, Perms perms, MeshSharedPtr mesh)
 {
+    convergence_file = fopen("pic/convergence.dat", "w");
 
     PGDSolutions pgd_solutions(definition, perms, mesh);
-    for(int i = 0; i < 5; i++)
+    for(int i = 0; i < NUM_STEPS; i++)
     {
         pgd_solutions.find_new_pair();
 
@@ -220,11 +226,13 @@ PGDSolutions pgd_run(ProblemDefinition definition, Perms perms, MeshSharedPtr me
         }
         fclose(file);
     }
+
+    fclose(convergence_file);
     return pgd_solutions;
 }
 
-const double test_x = 0.2;
-const double test_y = 0.3;
+const double test_x = 0.1;
+const double test_y = 0.1;
 
 void pgd_results(PGDSolutions pgd_solutions)
 {
@@ -294,8 +302,9 @@ int main(int argc, char* argv[])
 
     ProblemConfiguration configuration(profile_coarse, active_electrode);
     StandardPerms perms(eps_rel_material);
-    //ProblemDefinition_Cidlo_1 definition(configuration);
-    ProblemDefinition_Unit_Square definition(configuration);
+    //ProblemDefinitionCidlo1 definition(configuration);
+    ProblemDefinitionUnitSquare definition(configuration);
+    //ProblemDefinitionUnitSquareDivided definition(configuration);
 
     // first solve for homogeneous BC only!
     definition.POTENTIAL = 0.0;
@@ -308,7 +317,7 @@ int main(int argc, char* argv[])
     mloader.load(definition.mesh_name, mesh);
 
     // Refine all elements, do it INIT_REF_NUM-times.
-    for (unsigned int i = 0; i < INIT_REF_NUM; i++)
+    for (unsigned int i = 0; i < definition.INIT_REF_NUM; i++)
         mesh->refine_all_elements();
 
     //simple_run(definition, perms, mesh);
