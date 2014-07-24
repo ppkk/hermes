@@ -8,7 +8,10 @@ const double MIN_EPS = 1 * EPS0;
 const double MAX_EPS = 10 * EPS0;
 
 const int NUM_STEPS = 5;
-const int NUM_STEP_ITERATIONS = 20;
+const int NUM_STEP_ITERATIONS = 6;
+
+const double test_x = 0.03;
+const double test_y = 0.02;
 
 
 MeshFunctionSharedPtr<double> solve_problem(ProblemDefinition definition, Perms perms, MeshSharedPtr mesh)
@@ -100,26 +103,24 @@ double calc_integral_u_f(MeshFunctionSharedPtr<double> sln, double coeff)
 Function1D PGDSolutions::iteration_update_parameter()
 {
     assert(solutions.size() == parameters.size());
-    double a = 0;
-    double b = 0;   //a*eps + b
-    double c = 0;   //---------
-    double d = 0;   //c*eps + d
+    double a[solutions.size()], b[solutions.size()];
+    double c, d, r3;
     
     try
     {
-        b += calc_integral_u_f(actual_solution, definition.SOURCE_TERM);
+        r3 = calc_integral_u_f(actual_solution, definition.SOURCE_TERM);
         for(int i = 0; i < solutions.size(); i++)
         {
-            a -= calc_integral_grad_u_grad_v(actual_solution, solutions.at(i), definition.labels_full);
+            a[i] = calc_integral_grad_u_grad_v(actual_solution, solutions.at(i), definition.labels_full);
 
-            b -= perms.EPS_AIR * calc_integral_grad_u_grad_v(actual_solution, solutions.at(i), definition.labels_air);
-            b -= perms.EPS_KARTIT * calc_integral_grad_u_grad_v(actual_solution, solutions.at(i), definition.labels_kartit);
-            b -= perms.EPS_EMPTY * calc_integral_grad_u_grad_v(actual_solution, solutions.at(i), definition.labels_empty);
+            b[i]  = perms.EPS_AIR * calc_integral_grad_u_grad_v(actual_solution, solutions.at(i), definition.labels_air);
+            b[i] += perms.EPS_KARTIT * calc_integral_grad_u_grad_v(actual_solution, solutions.at(i), definition.labels_kartit);
+            b[i] += perms.EPS_EMPTY * calc_integral_grad_u_grad_v(actual_solution, solutions.at(i), definition.labels_empty);
         }
 
-        c += calc_integral_grad_u_grad_v(actual_solution, actual_solution, definition.labels_full);
+        c = calc_integral_grad_u_grad_v(actual_solution, actual_solution, definition.labels_full);
 
-        d += perms.EPS_AIR * calc_integral_grad_u_grad_v(actual_solution, actual_solution, definition.labels_air);
+        d  = perms.EPS_AIR * calc_integral_grad_u_grad_v(actual_solution, actual_solution, definition.labels_air);
         d += perms.EPS_KARTIT * calc_integral_grad_u_grad_v(actual_solution, actual_solution, definition.labels_kartit);
         d += perms.EPS_EMPTY * calc_integral_grad_u_grad_v(actual_solution, actual_solution, definition.labels_empty);
     }
@@ -134,10 +135,25 @@ Function1D PGDSolutions::iteration_update_parameter()
 
     Function1D newParam(actual_parameter.bound_lo, actual_parameter.bound_hi, actual_parameter.n_intervals);
     std::cout <<"(a,b,c,d): " << a << ", " << b << ", " << c << ", " << d << std::endl;
-    for(int i = 0; i < newParam.n_points; i++)
+    for(int point_idx = 0; point_idx < newParam.n_points; point_idx++)
     {
-        newParam.values[i] = (a*newParam.points[i] + b) / (c*newParam.points[i] + d);
+        double epsilon = newParam.points[point_idx];
+
+        double nominator = r3;
+        for(int previous_sol = 0; previous_sol < solutions.size(); previous_sol++)
+        {
+            nominator -= (a[previous_sol] * epsilon +  b[previous_sol]) * parameters[previous_sol].value(epsilon);
+        }
+        newParam.values[point_idx] = nominator / (c * epsilon + d);
     }
+
+    // !!!!!!!
+    // delim cely vektor prvnim clenem
+    // tak aby vzdy zacinal jednickou
+    // zrejme by se nemelo delat az bude nehomogenni Dirichletova podminka
+    //  !!!!!!!
+    //newParam.normalize_first_to_one();
+
     return newParam;
 }
 
@@ -160,6 +176,10 @@ MeshFunctionSharedPtr<double> PGDSolutions::iteration_update_solution()
     {
         linear_solver.solve();
         double* sln_vector = linear_solver.get_sln_vector();
+        double max = 0;
+        for(int i = 0; i < space->get_num_dofs(); i++)
+            max = std::max(max, abs(sln_vector[i]));
+        printf("maximal sol comp %g\n", max);
 
         Hermes::Hermes2D::Solution<double>::vector_to_solution(sln_vector, space, sln);
     }
@@ -181,19 +201,19 @@ Hermes::Hermes2D::Views::ScalarView viewS("Solution", new Hermes::Hermes2D::View
 
 void PGDSolutions::find_new_pair()
 {
-    Function1D func_init(MIN_EPS, MAX_EPS, 20, 1);
+    Function1D func_init(MIN_EPS, MAX_EPS, 100, 1);
     actual_parameter = func_init;
 
     for(int i = 0; i < NUM_STEP_ITERATIONS; i++)
     {
+        std::cout << "iteration " << i << std::endl;
         MeshFunctionSharedPtr<double> new_solution = iteration_update_solution();
         actual_solution = new_solution;
         viewS.show(actual_solution);
         Function1D new_parameter = iteration_update_parameter();
         double difference = new_parameter.diference(actual_parameter);
-        std::cout << "iteration " << i << ", difference " << difference << std::endl;
         fprintf(convergence_file, "%g ", difference);
-        new_parameter.print_short();
+        //new_parameter.print_short();
         actual_parameter = new_parameter;
     }
     fprintf(convergence_file, "\n");
@@ -213,7 +233,7 @@ PGDSolutions pgd_run(ProblemDefinition definition, Perms perms, MeshSharedPtr me
 
         std::cout << "NUMBER OF SOLS " << pgd_solutions.solutions.size() << std::endl;
 
-        viewS.save_numbered_screenshot("pic/solution%03d.png", i);
+        viewS.save_numbered_screenshot("pic/sol_mode%03d.png", i);
         Function1D last_param = pgd_solutions.parameters.back();
 
         char filename[30];
@@ -231,9 +251,6 @@ PGDSolutions pgd_run(ProblemDefinition definition, Perms perms, MeshSharedPtr me
     return pgd_solutions;
 }
 
-const double test_x = 0.1;
-const double test_y = 0.1;
-
 void pgd_results(PGDSolutions pgd_solutions)
 {
     ProblemDefinition definition = pgd_solutions.definition;
@@ -249,7 +266,18 @@ void pgd_results(PGDSolutions pgd_solutions)
         MeshFunctionSharedPtr<double> ref_sln = solve_problem(definition, perms, mesh);
         double val_ref = ref_sln->get_pt_value(test_x, test_y)->val[0];
         fprintf(file_norm, "%g  %g\n", eps/EPS0, val_ref);
+
+        viewS.show(ref_sln);
+        char sol_name[20];
+        sprintf(sol_name, "pic/solution_perm_%1.1lf.png", int(10*eps/EPS0)/10.);
+        viewS.save_screenshot(sol_name);
+
+        MeshFunctionSharedPtr<double>  pgd_sln = pgd_solutions.get_filter(eps);
+        viewS.show(pgd_sln);
+        sprintf(sol_name, "pic/pgd_solution_perm_%1.1lf.png", int(10*eps/EPS0)/10.);
+        viewS.save_screenshot(sol_name);
     }
+
     for(double eps = MIN_EPS; eps <= MAX_EPS; eps += (MAX_EPS - MIN_EPS) / 30)
     {
         fprintf(file_pgd, "%g  ", eps/EPS0);
@@ -284,16 +312,7 @@ void simple_run(ProblemDefinition definition, Perms perms, MeshSharedPtr mesh)
 
 int main(int argc, char* argv[])
 {
-
-    Function1D fn(0., 1., 2);
-    fn.values[0] = 1;
-    fn.values[1] = 2;
-    fn.values[2] = 1;
-    fn.print();
-    std::cout << fn.int_F_F() << std::endl;
-    std::cout << fn.value(0.9) << std::endl;
     Function1D::test();
-    //assert(0);
 
     Hermes::vector<int> profile_coarse(0,0,16,16,16,16,0,0);
 
@@ -302,8 +321,8 @@ int main(int argc, char* argv[])
 
     ProblemConfiguration configuration(profile_coarse, active_electrode);
     StandardPerms perms(eps_rel_material);
-    //ProblemDefinitionCidlo1 definition(configuration);
-    ProblemDefinitionUnitSquare definition(configuration);
+    ProblemDefinitionCidlo1 definition(configuration);
+    //ProblemDefinitionUnitSquare definition(configuration);
     //ProblemDefinitionUnitSquareDivided definition(configuration);
 
     // first solve for homogeneous BC only!

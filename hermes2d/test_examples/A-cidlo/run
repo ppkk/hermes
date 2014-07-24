@@ -1,0 +1,5 @@
+make
+rm pic/*
+./A-cidlo
+python plot_graph.py
+gwenview pic/dependence.png

@@ -50,8 +50,8 @@ struct ProblemDefinitionCidlo1 : ProblemDefinition
     ProblemDefinitionCidlo1(ProblemConfiguration configuration)
     {
         strcpy(mesh_name, "mesh_cidlo.msh");
-        P_INIT = 3;
-        INIT_REF_NUM = 1;
+        P_INIT = 2;
+        INIT_REF_NUM = 0;
 
         POTENTIAL = 1.0;
         SOURCE_TERM = 0.0;

@@ -38,7 +38,6 @@ public:
   virtual VectorFormVol<double>* clone() const;
 
 private:
-  int idx_i;
   std::vector<double> coeffs;
 };
 
@@ -134,4 +133,40 @@ public:
 
     double coeff;
 
+};
+
+class CombinationFilter : public Hermes::Hermes2D::SimpleFilter<double>
+{
+public:
+    CombinationFilter(Hermes::vector<MeshFunctionSharedPtr<double> > slns, std::vector<Function1D> parameters, double parameter_value) :
+        SimpleFilter(slns), solutions(slns), parameters(parameters), parameter_value(parameter_value) {}
+    virtual void filter_fn(int n, Hermes::vector<double*> values, double* result)
+    {
+        for (int i = 0; i < n; i++)
+        {
+            result[i] = 0;
+            for (unsigned int j = 0; j < values.size(); j++)
+            {
+                result[i] += values.at(j)[i] * parameters.at(j).value(parameter_value);
+            }
+        }
+    }
+    
+    virtual MeshFunction<double>* clone() const
+    {
+        Hermes::vector<MeshFunctionSharedPtr<double> > slns;
+        std::vector<Function1D> params;
+        for (int i = 0; i < this->num; i++)
+        {
+          slns.push_back(this->sln[i]->clone());
+          params.push_back(this->parameters[i]);
+        }
+        CombinationFilter* filter = new CombinationFilter(slns, params, parameter_value);
+        return filter;
+    }
+
+private:
+    Hermes::vector<MeshFunctionSharedPtr<double> > solutions;
+    std::vector<Function1D> parameters;
+    double parameter_value;
 };

@@ -48,6 +48,7 @@ WeakFormChangingPermInFull::WeakFormChangingPermInFull(const PGDSolutions* pgd_s
     // Residual forms.
     std::vector<double> w2_air, w2_kartit, w2_empty, w2_full;
 
+    std::cout << "pushing " << pgd_sols->solutions.size() << " coefficients" << std::endl;
     for(int i = 0; i < pgd_sols->solutions.size(); i++)
     {
         w2_air.push_back(-pgd_sols->perms.EPS_AIR * pgd_sols->actual_parameter.int_F_ExtF(pgd_sols->parameters[i]));
@@ -74,7 +75,7 @@ WeakFormChangingPermInFull::WeakFormChangingPermInFull(const PGDSolutions* pgd_s
 }
 
 GradPreviousSolsTimesGradTest::GradPreviousSolsTimesGradTest(int i, Hermes::vector<std::string> areas, std::vector<double> coeffs)
-    : VectorFormVol<double>(i), idx_i(i), coeffs(coeffs)
+    : VectorFormVol<double>(i), coeffs(coeffs)
 {
     this->set_areas(areas);
 }
@@ -88,12 +89,10 @@ double GradPreviousSolsTimesGradTest::value(int n, double *wt, Func<double> *u_e
 {
     double result = 0;
     for (int i = 0; i < n; i++) {
-        double value = 0;
         for(int prev_idx = 0; prev_idx < coeffs.size(); prev_idx++)
         {
-            value += coeffs[prev_idx] * (ext[prev_idx]->dx[i] * v->dx[i] + ext[prev_idx]->dy[i] * v->dy[i]);
+            result += wt[i] * coeffs[prev_idx] * (ext[prev_idx]->dx[i] * v->dx[i] + ext[prev_idx]->dy[i] * v->dy[i]);
         }
-        result += wt[i] * value;
     }
     return result;
 }
