@@ -340,11 +340,11 @@ void test_external_dirichlet_lift(ProblemDefinition definition, Perms perms, Mes
     Hermes::Hermes2D::Views::ScalarView viewS1("Solution with external", new Hermes::Hermes2D::Views::WinGeom(0, 0, 1500, 700));
     Hermes::Hermes2D::Views::ScalarView viewS2("Solution normal", new Hermes::Hermes2D::Views::WinGeom(0, 700, 1500, 700));
 
-    printf("sln1 %g, sln2 %g\n", sln1->get_pt_value(0.05, 0.05), sln2->get_pt_value(0.05, 0.05));
-    printf("sln1 %g, sln2 %g\n", sln1->get_pt_value(0.1, 0.05), sln2->get_pt_value(0.1, 0.05));
-    printf("sln1 %g, sln2 %g\n", sln1->get_pt_value(0.2, 0.05), sln2->get_pt_value(0.2, 0.05));
-    printf("sln1 %g, sln2 %g\n", sln1->get_pt_value(0.3, 0.05), sln2->get_pt_value(0.3, 0.05));
-    printf("sln1 %g, sln2 %g\n", sln1->get_pt_value(0.35, 0.05), sln2->get_pt_value(0.35, 0.05));
+    printf("sln1 %g, sln2 %g\n", sln1->get_pt_value(0.05, 0.05)->val[0], sln2->get_pt_value(0.05, 0.05)->val[0]);
+    printf("sln1 %g, sln2 %g\n", sln1->get_pt_value(0.1, 0.05)->val[0], sln2->get_pt_value(0.1, 0.05)->val[0]);
+    printf("sln1 %g, sln2 %g\n", sln1->get_pt_value(0.2, 0.05)->val[0], sln2->get_pt_value(0.2, 0.05)->val[0]);
+    printf("sln1 %g, sln2 %g\n", sln1->get_pt_value(0.3, 0.05)->val[0], sln2->get_pt_value(0.3, 0.05)->val[0]);
+    printf("sln1 %g, sln2 %g\n", sln1->get_pt_value(0.35, 0.05)->val[0], sln2->get_pt_value(0.35, 0.05)->val[0]);
 
     viewS1.show(sln1);
     viewS2.show(sln2);
