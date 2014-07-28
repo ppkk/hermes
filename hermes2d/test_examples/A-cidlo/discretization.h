@@ -182,6 +182,18 @@ struct Function1D
         return Hermes::sqrt(result);
     }
 
+    double norm() const
+    {
+
+        double result = 0;
+        for(int i = 0; i < n_points; i++)
+        {
+            result += sqr(values[i]);
+        }
+
+        return Hermes::sqrt(result);
+    }
+
     static void test()
     {
         Function1D fn(0., 1., 2);

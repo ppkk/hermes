@@ -32,16 +32,16 @@ pylab.close()
 #
 # plot parameters separately 
 #
-#for i in range(1, data[0].size):    
-#    filename = "pic/parameter00%d.dat" % (i-1)
-#    picturename = "pic/parameter00%d.png" % (i-1)
-#    data2 = numpy.loadtxt(filename)
-#    x2 = data2[:, 0]
-#    y2 = data2[:, 1]
-#    plot(x2, y2, '-', label="parameter %d" % i)
-#    legend()
-#    savefig(picturename)
-#    pylab.close()
+for i in range(1, data[0].size):    
+    filename = "pic/parameter00%d.dat" % (i-1)
+    picturename = "pic/parameter00%d.png" % (i-1)
+    data2 = numpy.loadtxt(filename)
+    x2 = data2[:, 0]
+    y2 = data2[:, 1]
+    plot(x2, y2, '-', label="$p_%d$" % i)
+    legend()
+    savefig(picturename)
+    pylab.close()
 
 #
 # plot parameters to one file 
@@ -58,14 +58,17 @@ savefig(picturename)
 pylab.close()
 
 
-data3 = numpy.loadtxt("pic/convergence.dat")
 pylab.title("Convergence")
 pylab.xlabel("iteration")
 pylab.ylabel("function difference")
-for i in range(data[0].size - 1):
-    x = range(1, data3[0].size + 1)
-    y = data3[i, :]
+
+lines = [np.array(map(double, line.split())) for line in open('pic/convergence.dat')]
+i = 1
+for line in lines:
+    x = range(1, len(line) + 1)
+    y = list(line)
     semilogy(x, y, '-', label="step %d" % i)
+    i += 1
 
 legend()
 savefig("pic/convergence.png")

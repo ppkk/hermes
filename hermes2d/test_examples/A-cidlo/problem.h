@@ -32,6 +32,17 @@ struct StandardPerms : Perms
     }
 };
 
+struct AllOnePerms : Perms
+{
+    AllOnePerms()
+    {
+        EPS_AIR = EPS0;
+        EPS_EMPTY = EPS0;
+        EPS_FULL = EPS0;
+        EPS_KARTIT = EPS0;
+    }
+};
+
 
 struct ProblemDefinition
 {

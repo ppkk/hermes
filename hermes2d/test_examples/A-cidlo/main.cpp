@@ -8,23 +8,32 @@ const double MIN_EPS = 1 * EPS0;
 const double MAX_EPS = 10 * EPS0;
 
 const int NUM_STEPS = 5;
-const int NUM_STEP_ITERATIONS = 6;
+const int MAX_STEP_ITERATIONS = 20;
+const double STEP_ITERATIONS_TOLERANCE = 1e-1;
 
 const double test_x = 0.03;
 const double test_y = 0.02;
 
 
-MeshFunctionSharedPtr<double> solve_problem(ProblemDefinition definition, Perms perms, MeshSharedPtr mesh)
+MeshFunctionSharedPtr<double> solve_problem(ProblemDefinition definition, Perms perms, MeshSharedPtr mesh, bool external_dirichlet_lift)
 {
     // Initialize essential boundary conditions.
     Hermes::Hermes2D::DefaultEssentialBCConst<double> bc_essential_ground(definition.bc_labels_ground, 0);
-    Hermes::Hermes2D::DefaultEssentialBCConst<double> bc_essential_potential(definition.bc_labels_potential, definition.POTENTIAL);
+    double potential = external_dirichlet_lift ? 0 : definition.POTENTIAL;
+    Hermes::Hermes2D::DefaultEssentialBCConst<double> bc_essential_potential(definition.bc_labels_potential, potential);
     Hermes::Hermes2D::EssentialBCs<double> bcs(Hermes::vector<EssentialBoundaryCondition<double> *> (&bc_essential_ground, &bc_essential_potential));
 
     SpaceSharedPtr<double> space(new Hermes::Hermes2D::H1Space<double>(mesh, &bcs, definition.P_INIT));
     std::cout << "Ndofs: " << space->get_num_dofs() << std::endl;
 
-    CustomWeakFormPoisson wf(definition, perms);
+    CustomWeakFormPoisson wf(definition, perms, external_dirichlet_lift);
+    MeshFunctionSharedPtr<double> dirichlet_lift;
+    if(external_dirichlet_lift)
+    {
+        dirichlet_lift = solve_problem(definition, AllOnePerms(), mesh, false);
+        wf.set_ext(dirichlet_lift);
+    }
+
     MeshFunctionSharedPtr<double> sln(new Solution<double>);
     Hermes::Hermes2D::LinearSolver<double> linear_solver(&wf, space);
 
@@ -34,7 +43,16 @@ MeshFunctionSharedPtr<double> solve_problem(ProblemDefinition definition, Perms 
         double* sln_vector = linear_solver.get_sln_vector();
 
         Hermes::Hermes2D::Solution<double>::vector_to_solution(sln_vector, space, sln);
-        return sln;
+        if(external_dirichlet_lift)
+        {
+
+            SumFilter<double>* sum = new SumFilter<double>(Hermes::vector<MeshFunctionSharedPtr<double> >(sln, dirichlet_lift));
+            return MeshFunctionSharedPtr<double>(sum);
+        }
+        else
+        {
+            return sln;
+        }
     }
     catch (Exceptions::Exception& e)
     {
@@ -204,17 +222,20 @@ void PGDSolutions::find_new_pair()
     Function1D func_init(MIN_EPS, MAX_EPS, 100, 1);
     actual_parameter = func_init;
 
-    for(int i = 0; i < NUM_STEP_ITERATIONS; i++)
+    double difference = 1e10;
+    int iteration = 1;
+    while((difference > STEP_ITERATIONS_TOLERANCE) && (iteration < MAX_STEP_ITERATIONS))
     {
-        std::cout << "iteration " << i << std::endl;
+        std::cout << "iteration " << iteration << std::endl;
         MeshFunctionSharedPtr<double> new_solution = iteration_update_solution();
         actual_solution = new_solution;
         viewS.show(actual_solution);
         Function1D new_parameter = iteration_update_parameter();
-        double difference = new_parameter.diference(actual_parameter);
+        difference = new_parameter.diference(actual_parameter) / new_parameter.norm();
         fprintf(convergence_file, "%g ", difference);
         //new_parameter.print_short();
         actual_parameter = new_parameter;
+        iteration++;
     }
     fprintf(convergence_file, "\n");
     parameters.push_back(actual_parameter);
@@ -263,7 +284,7 @@ void pgd_results(PGDSolutions pgd_solutions)
     for(double eps = MIN_EPS; eps <= MAX_EPS; eps += (MAX_EPS - MIN_EPS) / 10)
     {
         perms.EPS_FULL = eps;
-        MeshFunctionSharedPtr<double> ref_sln = solve_problem(definition, perms, mesh);
+        MeshFunctionSharedPtr<double> ref_sln = solve_problem(definition, perms, mesh, false);
         double val_ref = ref_sln->get_pt_value(test_x, test_y)->val[0];
         fprintf(file_norm, "%g  %g\n", eps/EPS0, val_ref);
 
@@ -293,12 +314,12 @@ void pgd_results(PGDSolutions pgd_solutions)
     fclose(file_pgd);
 }
 
-void simple_run(ProblemDefinition definition, Perms perms, MeshSharedPtr mesh)
+void simple_run(ProblemDefinition definition, Perms perms, MeshSharedPtr mesh, bool external_dirichlet_lift)
 {
-    MeshFunctionSharedPtr<double> sln = solve_problem(definition, perms, mesh);
+    MeshFunctionSharedPtr<double> sln = solve_problem(definition, perms, mesh, external_dirichlet_lift);
     MeshFunctionSharedPtr<double> sln_perm = solve_permitivity(definition, perms, mesh);
 
-    std::cout << "Integral is " << calc_integral_energy(sln, definition, perms) << std::endl;
+    //std::cout << "Integral is " << calc_integral_energy(sln, definition, perms) << std::endl;
 
     // Visualize the solution.
     Hermes::Hermes2D::Views::ScalarView viewS("Solution", new Hermes::Hermes2D::Views::WinGeom(0, 0, 1500, 700));
@@ -326,8 +347,8 @@ int main(int argc, char* argv[])
     //ProblemDefinitionUnitSquareDivided definition(configuration);
 
     // first solve for homogeneous BC only!
-    definition.POTENTIAL = 0.0;
-    definition.SOURCE_TERM = 1.0;
+    //definition.POTENTIAL = 0.0;
+    //definition.SOURCE_TERM = 1.0;
 
 
     // Load the mesh.
@@ -339,9 +360,9 @@ int main(int argc, char* argv[])
     for (unsigned int i = 0; i < definition.INIT_REF_NUM; i++)
         mesh->refine_all_elements();
 
-    //simple_run(definition, perms, mesh);
-    PGDSolutions pgd_solutions = pgd_run(definition, perms, mesh);
-    pgd_results(pgd_solutions);
+    simple_run(definition, perms, mesh, true);
+    //PGDSolutions pgd_solutions = pgd_run(definition, perms, mesh);
+    //pgd_results(pgd_solutions);
 
     return 0;
 }

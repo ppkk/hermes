@@ -2,7 +2,7 @@
 
 /* Weak forms */
 
-CustomWeakFormPoisson::CustomWeakFormPoisson(ProblemDefinition definition, Perms perms) : Hermes::Hermes2D::WeakForm<double>(1)
+CustomWeakFormPoisson::CustomWeakFormPoisson(ProblemDefinition definition, Perms perms, bool external_dirichlet_lift) : Hermes::Hermes2D::WeakForm<double>(1)
 {
   // Matrix forms.
     add_matrix_form(new Hermes::Hermes2D::WeakFormsH1::DefaultMatrixFormDiffusion<double>(0, 0, definition.labels_air, new Hermes::Hermes1DFunction<double>(perms.EPS_AIR)));
@@ -11,7 +11,18 @@ CustomWeakFormPoisson::CustomWeakFormPoisson(ProblemDefinition definition, Perms
     add_matrix_form(new Hermes::Hermes2D::WeakFormsH1::DefaultMatrixFormDiffusion<double>(0, 0, definition.labels_empty, new Hermes::Hermes1DFunction<double>(perms.EPS_EMPTY)));
 
     //Vector forms - for electrostatic should be removed(coeff = 0)
-    add_vector_form(new Hermes::Hermes2D::WeakFormsH1::DefaultVectorFormVol<double>(0, Hermes::HERMES_ANY, new Hermes::Hermes2DFunction<double>(definition.SOURCE_TERM)));
+    if(definition.SOURCE_TERM != 0.0)
+        add_vector_form(new Hermes::Hermes2D::WeakFormsH1::DefaultVectorFormVol<double>(0, Hermes::HERMES_ANY, new Hermes::Hermes2DFunction<double>(definition.SOURCE_TERM)));
+
+    // Dirichlet lift is not done using standard Hermes tools.
+    // It is calculated separately (using relative permitivity == 1 in whole domain) and than added to the final solution
+    if(external_dirichlet_lift)
+    {
+        add_vector_form(new GradDirichletLiftTimesGradTest(0, definition.labels_air, perms.EPS_AIR, 0));
+        add_vector_form(new GradDirichletLiftTimesGradTest(0, definition.labels_kartit, perms.EPS_KARTIT, 0));
+        add_vector_form(new GradDirichletLiftTimesGradTest(0, definition.labels_full, perms.EPS_FULL, 0));
+        add_vector_form(new GradDirichletLiftTimesGradTest(0, definition.labels_empty, perms.EPS_EMPTY, 0));
+    }
 
 }
 
@@ -102,12 +113,10 @@ Ord GradPreviousSolsTimesGradTest::ord(int n, double *wt, Func<Ord> *u_ext[], Fu
 {
     Ord result = Ord(0);
     for (int i = 0; i < n; i++) {
-        Ord value = Ord(0);
         for(int prev_idx = 0; prev_idx < coeffs.size(); prev_idx++)
         {
-            value += coeffs[prev_idx] * (ext[prev_idx]->dx[i] * v->dx[i] + ext[prev_idx]->dy[i] * v->dy[i]);
+            result += wt[i] * coeffs[prev_idx] * (ext[prev_idx]->dx[i] * v->dx[i] + ext[prev_idx]->dy[i] * v->dy[i]);
         }
-        result += wt[i] * value;
     }
     return result;
 }
@@ -115,5 +124,41 @@ Ord GradPreviousSolsTimesGradTest::ord(int n, double *wt, Func<Ord> *u_ext[], Fu
 VectorFormVol<double>* GradPreviousSolsTimesGradTest::clone() const
 {
     return new GradPreviousSolsTimesGradTest(this->i, this->areas, this->coeffs);
+}
+
+GradDirichletLiftTimesGradTest::GradDirichletLiftTimesGradTest(int i, Hermes::vector<std::string> areas, double coeff, int extIdx)
+    : VectorFormVol<double>(i), ext_idx(extIdx), coeff(coeff)
+{
+    this->set_areas(areas);
+}
+
+GradDirichletLiftTimesGradTest::~GradDirichletLiftTimesGradTest()
+{
+}
+
+double GradDirichletLiftTimesGradTest::value(int n, double *wt, Func<double> *u_ext[], Func<double> *v,
+                                           Geom<double> *e, Func<double> **ext) const
+{
+    double result = 0;
+    for (int i = 0; i < n; i++) {
+        result += wt[i] * (ext[ext_idx]->dx[i] * v->dx[i] + ext[ext_idx]->dy[i] * v->dy[i]);
+    }
+    // it is negative and considered with eps of air!!!
+    return - coeff * result;
+}
+
+Ord GradDirichletLiftTimesGradTest::ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *v,
+                                      Geom<Ord> *e, Func<Ord> **ext) const
+{
+    Ord result = Ord(0);
+    for (int i = 0; i < n; i++) {
+        result += wt[i] * (ext[ext_idx]->dx[i] * v->dx[i] + ext[ext_idx]->dy[i] * v->dy[i]);
+    }
+    return - coeff * result;
+}
+
+VectorFormVol<double>* GradDirichletLiftTimesGradTest::clone() const
+{
+    return new GradDirichletLiftTimesGradTest(this->i, this->areas, this->coeff, this->ext_idx);
 }
 

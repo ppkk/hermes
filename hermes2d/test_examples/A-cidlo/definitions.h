@@ -7,7 +7,7 @@ using namespace Hermes::Hermes2D;
 class CustomWeakFormPoisson : public Hermes::Hermes2D::WeakForm<double>
 {
 public:
-    CustomWeakFormPoisson(ProblemDefinition definition, Perms perms);
+    CustomWeakFormPoisson(ProblemDefinition definition, Perms perms, bool external_dirichlet_lift);
 };
 
 class CustomWeakFormPermitivity : public Hermes::Hermes2D::WeakForm<double>
@@ -39,6 +39,26 @@ public:
 
 private:
   std::vector<double> coeffs;
+};
+
+class GradDirichletLiftTimesGradTest : public VectorFormVol<double>
+{
+public:
+  GradDirichletLiftTimesGradTest(int i, Hermes::vector<std::string> areas, double coeff, int ext_idx);
+
+  ~GradDirichletLiftTimesGradTest();
+
+  virtual double value(int n, double *wt, Func<double> *u_ext[], Func<double> *v,
+    Geom<double> *e, Func<double> **ext) const;
+
+  virtual Hermes::Ord ord(int n, double *wt, Func<Hermes::Ord> *u_ext[], Func<Hermes::Ord> *v,
+    Geom<Hermes::Ord> *e, Func<Ord> **ext) const;
+
+  virtual VectorFormVol<double>* clone() const;
+
+private:
+  int ext_idx;
+  double coeff;
 };
 
 class EnergyIntegralCalculator : public PostProcessing::VolumetricIntegralCalculator<double>
