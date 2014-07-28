@@ -331,6 +331,27 @@ void simple_run(ProblemDefinition definition, Perms perms, MeshSharedPtr mesh, b
     viewS.wait_for_close();
 }
 
+void test_external_dirichlet_lift(ProblemDefinition definition, Perms perms, MeshSharedPtr mesh)
+{
+    MeshFunctionSharedPtr<double> sln1 = solve_problem(definition, perms, mesh, true);
+    MeshFunctionSharedPtr<double> sln2 = solve_problem(definition, perms, mesh, false);
+
+    // Visualize the solution.
+    Hermes::Hermes2D::Views::ScalarView viewS1("Solution with external", new Hermes::Hermes2D::Views::WinGeom(0, 0, 1500, 700));
+    Hermes::Hermes2D::Views::ScalarView viewS2("Solution normal", new Hermes::Hermes2D::Views::WinGeom(0, 700, 1500, 700));
+
+    printf("sln1 %g, sln2 %g\n", sln1->get_pt_value(0.05, 0.05), sln2->get_pt_value(0.05, 0.05));
+    printf("sln1 %g, sln2 %g\n", sln1->get_pt_value(0.1, 0.05), sln2->get_pt_value(0.1, 0.05));
+    printf("sln1 %g, sln2 %g\n", sln1->get_pt_value(0.2, 0.05), sln2->get_pt_value(0.2, 0.05));
+    printf("sln1 %g, sln2 %g\n", sln1->get_pt_value(0.3, 0.05), sln2->get_pt_value(0.3, 0.05));
+    printf("sln1 %g, sln2 %g\n", sln1->get_pt_value(0.35, 0.05), sln2->get_pt_value(0.35, 0.05));
+
+    viewS1.show(sln1);
+    viewS2.show(sln2);
+    viewS1.wait_for_close();
+}
+
+
 int main(int argc, char* argv[])
 {
     Function1D::test();
@@ -360,7 +381,9 @@ int main(int argc, char* argv[])
     for (unsigned int i = 0; i < definition.INIT_REF_NUM; i++)
         mesh->refine_all_elements();
 
-    simple_run(definition, perms, mesh, true);
+    //simple_run(definition, perms, mesh, true);
+    test_external_dirichlet_lift(definition, perms, mesh);
+
     //PGDSolutions pgd_solutions = pgd_run(definition, perms, mesh);
     //pgd_results(pgd_solutions);
 
