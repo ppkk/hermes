@@ -271,6 +271,9 @@ struct PGDSolutions
             result += parameters.at(i).value(eps) * solutions.at(i)->get_pt_value(x, y)->val[0];
         }
 
+        if(definition.use_dirichlet_lift())
+            result += dirichlet_lift->get_pt_value(x, y)->val[0];
+
         return result;
     }
 

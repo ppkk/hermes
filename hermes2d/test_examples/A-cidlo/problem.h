@@ -147,11 +147,12 @@ struct ProblemDefinitionUnitSquare : ProblemDefinition
         POTENTIAL = 1.0;
         SOURCE_TERM = 0.0;
 
+        bc_labels_potential.push_back("Top");
+
         // zemnici elektroda
         bc_labels_ground.push_back("Bottom");
-        bc_labels_ground.push_back("Top");
-        bc_labels_ground.push_back("Left");
-        bc_labels_ground.push_back("Right");
+        //bc_labels_ground.push_back("Left");
+        //bc_labels_ground.push_back("Right");
 
         labels_full.push_back("Full");
     }
@@ -168,11 +169,12 @@ struct ProblemDefinitionUnitSquareDivided : ProblemDefinition
         POTENTIAL = 1.0;
         SOURCE_TERM = 0.0;
 
+        bc_labels_potential.push_back("Top");
+
         // zemnici elektroda
         bc_labels_ground.push_back("Bottom");
-        bc_labels_ground.push_back("Top");
-        bc_labels_ground.push_back("Left");
-        bc_labels_ground.push_back("Right");
+        //bc_labels_ground.push_back("Left");
+        //bc_labels_ground.push_back("Right");
 
         labels_full.push_back("Full");
         labels_air.push_back("Air");

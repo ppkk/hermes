@@ -7,9 +7,9 @@ using namespace Hermes::Hermes2D;
 const double MIN_EPS = 1 * EPS0;
 const double MAX_EPS = 10 * EPS0;
 
-const int NUM_STEPS = 5;
+const int NUM_STEPS = 6;
 const int MAX_STEP_ITERATIONS = 20;
-const double STEP_ITERATIONS_TOLERANCE = 1e-1;
+const double STEP_ITERATIONS_TOLERANCE = 1e-2;
 
 const double test_x = 0.03;
 const double test_y = 0.02;
@@ -192,7 +192,9 @@ MeshFunctionSharedPtr<double> PGDSolutions::iteration_update_solution()
 
     // Initialize essential boundary conditions.
     Hermes::Hermes2D::DefaultEssentialBCConst<double> bc_essential_ground(definition.bc_labels_ground, 0);
-    Hermes::Hermes2D::DefaultEssentialBCConst<double> bc_essential_potential(definition.bc_labels_potential, definition.POTENTIAL);
+
+    // We use 0 Dirichlet BC everywhere. Dirichlet lift is handled separately
+    Hermes::Hermes2D::DefaultEssentialBCConst<double> bc_essential_potential(definition.bc_labels_potential, 0);
     Hermes::Hermes2D::EssentialBCs<double> bcs(Hermes::vector<EssentialBoundaryCondition<double> *> (&bc_essential_ground, &bc_essential_potential));
 
     SpaceSharedPtr<double> space(new Hermes::Hermes2D::H1Space<double>(mesh, &bcs, definition.P_INIT));
@@ -385,8 +387,8 @@ int main(int argc, char* argv[])
     //ProblemDefinitionUnitSquareDivided definition(configuration);
 
     // first solve for homogeneous BC only!
-    definition.POTENTIAL = 0.0;
-    definition.SOURCE_TERM = 1.0;
+    //definition.POTENTIAL = 0.0;
+    //definition.SOURCE_TERM = 1.0;
 
 
     // Load the mesh.

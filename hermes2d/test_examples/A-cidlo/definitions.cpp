@@ -18,10 +18,10 @@ CustomWeakFormPoisson::CustomWeakFormPoisson(ProblemDefinition definition, Perms
     // It is calculated separately (using relative permitivity == 1 in whole domain) and than added to the final solution
     if(external_dirichlet_lift)
     {
-        add_vector_form(new GradDirichletLiftTimesGradTest(0, definition.labels_air, perms.EPS_AIR, 0));
-        add_vector_form(new GradDirichletLiftTimesGradTest(0, definition.labels_kartit, perms.EPS_KARTIT, 0));
-        add_vector_form(new GradDirichletLiftTimesGradTest(0, definition.labels_full, perms.EPS_FULL, 0));
-        add_vector_form(new GradDirichletLiftTimesGradTest(0, definition.labels_empty, perms.EPS_EMPTY, 0));
+        add_vector_form(new GradDirichletLiftTimesGradTest(0, definition.labels_air, -perms.EPS_AIR, 0));
+        add_vector_form(new GradDirichletLiftTimesGradTest(0, definition.labels_kartit, -perms.EPS_KARTIT, 0));
+        add_vector_form(new GradDirichletLiftTimesGradTest(0, definition.labels_full, -perms.EPS_FULL, 0));
+        add_vector_form(new GradDirichletLiftTimesGradTest(0, definition.labels_empty, -perms.EPS_EMPTY, 0));
     }
 
 }
@@ -167,8 +167,7 @@ double GradDirichletLiftTimesGradTest::value(int n, double *wt, Func<double> *u_
     for (int i = 0; i < n; i++) {
         result += wt[i] * (ext[ext_idx]->dx[i] * v->dx[i] + ext[ext_idx]->dy[i] * v->dy[i]);
     }
-    // it is negative and considered with eps of air!!!
-    return - coeff * result;
+    return coeff * result;
 }
 
 Ord GradDirichletLiftTimesGradTest::ord(int n, double *wt, Func<Ord> *u_ext[], Func<Ord> *v,
@@ -178,7 +177,7 @@ Ord GradDirichletLiftTimesGradTest::ord(int n, double *wt, Func<Ord> *u_ext[], F
     for (int i = 0; i < n; i++) {
         result += wt[i] * (ext[ext_idx]->dx[i] * v->dx[i] + ext[ext_idx]->dy[i] * v->dy[i]);
     }
-    return - coeff * result;
+    return coeff * result;
 }
 
 VectorFormVol<double>* GradDirichletLiftTimesGradTest::clone() const

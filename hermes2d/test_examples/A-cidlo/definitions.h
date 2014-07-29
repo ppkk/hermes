@@ -165,23 +165,29 @@ public:
         for (int i = 0; i < n; i++)
         {
             result[i] = 0;
-            for (unsigned int j = 0; j < values.size(); j++)
+            int num_modes = parameters.size();
+
+            // the last value is the Dirichlet lift
+            assert(values.size() == num_modes + 1);
+
+            for (unsigned int j = 0; j < num_modes; j++)
             {
                 result[i] += values.at(j)[i] * parameters.at(j).value(parameter_value);
             }
+
+            result[i] += values.at(num_modes)[i];
         }
     }
     
     virtual MeshFunction<double>* clone() const
     {
         Hermes::vector<MeshFunctionSharedPtr<double> > slns;
-        std::vector<Function1D> params;
+        //std::vector<Function1D> params;
         for (int i = 0; i < this->num; i++)
         {
           slns.push_back(this->sln[i]->clone());
-          params.push_back(this->parameters[i]);
         }
-        CombinationFilter* filter = new CombinationFilter(slns, params, parameter_value);
+        CombinationFilter* filter = new CombinationFilter(slns, parameters, parameter_value);
         return filter;
     }
 
