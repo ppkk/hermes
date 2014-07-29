@@ -54,6 +54,11 @@ struct ProblemDefinition
     int P_INIT;                     // Uniform polynomial degree of mesh elements.
     int INIT_REF_NUM;               // Number of initial uniform mesh refinements.
 
+    bool use_dirichlet_lift() const
+    {
+        return POTENTIAL != 0.0;
+    }
+
 };
 
 struct ProblemDefinitionCidlo1 : ProblemDefinition

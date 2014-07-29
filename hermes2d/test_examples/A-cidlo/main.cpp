@@ -122,11 +122,22 @@ Function1D PGDSolutions::iteration_update_parameter()
 {
     assert(solutions.size() == parameters.size());
     double a[solutions.size()], b[solutions.size()];
-    double c, d, r3;
+    double c, d, r3 = 0.0, r3_air = 0.0, r3_empty = 0.0, r3_kartit = 0.0, r3_full = 0.0;
     
     try
     {
-        r3 = calc_integral_u_f(actual_solution, definition.SOURCE_TERM);
+        if(definition.SOURCE_TERM != 0)
+        {
+            r3 = calc_integral_u_f(actual_solution, definition.SOURCE_TERM);
+        }
+
+        if(definition.use_dirichlet_lift())
+        {
+            r3_air = calc_integral_grad_u_grad_v(actual_solution, dirichlet_lift, definition.labels_air);
+            r3_empty = calc_integral_grad_u_grad_v(actual_solution, dirichlet_lift, definition.labels_empty);
+            r3_kartit = calc_integral_grad_u_grad_v(actual_solution, dirichlet_lift, definition.labels_kartit);
+            r3_full = calc_integral_grad_u_grad_v(actual_solution, dirichlet_lift, definition.labels_full);
+        }
         for(int i = 0; i < solutions.size(); i++)
         {
             a[i] = calc_integral_grad_u_grad_v(actual_solution, solutions.at(i), definition.labels_full);
@@ -152,12 +163,12 @@ Function1D PGDSolutions::iteration_update_parameter()
     }
 
     Function1D newParam(actual_parameter.bound_lo, actual_parameter.bound_hi, actual_parameter.n_intervals);
-    std::cout <<"(a,b,c,d): " << a << ", " << b << ", " << c << ", " << d << std::endl;
+    //std::cout <<"(a,b,c,d): " << a << ", " << b << ", " << c << ", " << d << std::endl;
     for(int point_idx = 0; point_idx < newParam.n_points; point_idx++)
     {
         double epsilon = newParam.points[point_idx];
 
-        double nominator = r3;
+        double nominator = r3 - epsilon * r3_full - perms.EPS_AIR * r3_air - perms.EPS_EMPTY * r3_empty - perms.EPS_KARTIT * r3_kartit;
         for(int previous_sol = 0; previous_sol < solutions.size(); previous_sol++)
         {
             nominator -= (a[previous_sol] * epsilon +  b[previous_sol]) * parameters[previous_sol].value(epsilon);
@@ -248,13 +259,19 @@ PGDSolutions pgd_run(ProblemDefinition definition, Perms perms, MeshSharedPtr me
     convergence_file = fopen("pic/convergence.dat", "w");
 
     PGDSolutions pgd_solutions(definition, perms, mesh);
+
+    if(pgd_solutions.definition.use_dirichlet_lift())
+    {
+        pgd_solutions.dirichlet_lift = solve_problem(definition, AllOnePerms(), mesh, false);
+    }
+
     for(int i = 0; i < NUM_STEPS; i++)
     {
         pgd_solutions.find_new_pair();
 
         std::cout << "NUMBER OF SOLS " << pgd_solutions.solutions.size() << std::endl;
 
-        viewS.save_numbered_screenshot("pic/sol_mode%03d.png", i);
+        viewS.save_numbered_screenshot("pic/sol_mode%03d.bmp", i);
         Function1D last_param = pgd_solutions.parameters.back();
 
         char filename[30];
@@ -290,12 +307,12 @@ void pgd_results(PGDSolutions pgd_solutions)
 
         viewS.show(ref_sln);
         char sol_name[20];
-        sprintf(sol_name, "pic/solution_perm_%1.1lf.png", int(10*eps/EPS0)/10.);
+        sprintf(sol_name, "pic/solution_perm_%1.1lf.bmp", int(10*eps/EPS0)/10.);
         viewS.save_screenshot(sol_name);
 
         MeshFunctionSharedPtr<double>  pgd_sln = pgd_solutions.get_filter(eps);
         viewS.show(pgd_sln);
-        sprintf(sol_name, "pic/pgd_solution_perm_%1.1lf.png", int(10*eps/EPS0)/10.);
+        sprintf(sol_name, "pic/pgd_sol_perm_%1.1lf.bmp", int(10*eps/EPS0)/10.);
         viewS.save_screenshot(sol_name);
     }
 
@@ -368,8 +385,8 @@ int main(int argc, char* argv[])
     //ProblemDefinitionUnitSquareDivided definition(configuration);
 
     // first solve for homogeneous BC only!
-    //definition.POTENTIAL = 0.0;
-    //definition.SOURCE_TERM = 1.0;
+    definition.POTENTIAL = 0.0;
+    definition.SOURCE_TERM = 1.0;
 
 
     // Load the mesh.
@@ -382,10 +399,10 @@ int main(int argc, char* argv[])
         mesh->refine_all_elements();
 
     //simple_run(definition, perms, mesh, true);
-    test_external_dirichlet_lift(definition, perms, mesh);
+    //test_external_dirichlet_lift(definition, perms, mesh);
 
-    //PGDSolutions pgd_solutions = pgd_run(definition, perms, mesh);
-    //pgd_results(pgd_solutions);
+    PGDSolutions pgd_solutions = pgd_run(definition, perms, mesh);
+    pgd_results(pgd_solutions);
 
     return 0;
 }

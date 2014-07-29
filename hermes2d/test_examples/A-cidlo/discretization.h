@@ -123,6 +123,17 @@ struct Function1D
         return result * int_length();
     }
 
+    double int_x_F() const
+    {
+        double result = 0;
+        for(int i = 0; i < n_intervals; i++)
+        {
+            result += (points[i] * values[i] + points[i+1] * values[i+1]) / 2.;
+        }
+
+        return result * int_length();
+    }
+
     double int_F_F() const
     {
         double result = 0;
@@ -272,6 +283,8 @@ struct PGDSolutions
 
     std::vector<Function1D> parameters;
     std::vector<MeshFunctionSharedPtr<double> > solutions;
+
+    MeshFunctionSharedPtr<double> dirichlet_lift;
 
     Function1D actual_parameter;
     MeshFunctionSharedPtr<double> actual_solution;

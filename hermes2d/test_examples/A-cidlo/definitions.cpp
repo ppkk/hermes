@@ -76,12 +76,36 @@ WeakFormChangingPermInFull::WeakFormChangingPermInFull(const PGDSolutions* pgd_s
     add_vector_form(new GradPreviousSolsTimesGradTest(0, pgd_sols->definition.labels_empty, w2_empty));
 
     // RHS residual forms
-    double w3 = pgd_sols->actual_parameter.int_F();
-    add_vector_form(new WeakFormsH1::DefaultVectorFormVol<double>(0, Hermes::HERMES_ANY, new Hermes::Hermes2DFunction<double>(w3 * pgd_sols->definition.SOURCE_TERM)));
+    if(pgd_sols->definition.SOURCE_TERM != 0.0)
+    {
+        double w3 = pgd_sols->actual_parameter.int_F();
+        add_vector_form(new WeakFormsH1::DefaultVectorFormVol<double>(0, Hermes::HERMES_ANY, new Hermes::Hermes2DFunction<double>(w3 * pgd_sols->definition.SOURCE_TERM)));
+    }
+
+    // Dirichlet lift
+    if(pgd_sols->definition.use_dirichlet_lift())
+    {
+        double w3_air = -pgd_sols->perms.EPS_AIR * pgd_sols->actual_parameter.int_F();
+        double w3_empty = -pgd_sols->perms.EPS_EMPTY * pgd_sols->actual_parameter.int_F();
+        double w3_kartit = -pgd_sols->perms.EPS_KARTIT * pgd_sols->actual_parameter.int_F();
+
+        double w3_full = -pgd_sols->actual_parameter.int_x_F();
+
+        int dirichlet_lift_idx = pgd_sols->solutions.size();
+        add_vector_form(new GradDirichletLiftTimesGradTest(0, pgd_sols->definition.labels_air, w3_air, dirichlet_lift_idx));
+        add_vector_form(new GradDirichletLiftTimesGradTest(0, pgd_sols->definition.labels_empty, w3_empty, dirichlet_lift_idx));
+        add_vector_form(new GradDirichletLiftTimesGradTest(0, pgd_sols->definition.labels_kartit, w3_kartit, dirichlet_lift_idx));
+        add_vector_form(new GradDirichletLiftTimesGradTest(0, pgd_sols->definition.labels_full, w3_full, dirichlet_lift_idx));
+    }
 
     Hermes::vector<MeshFunctionSharedPtr<double> > previous_sols;
     for(int i = 0; i < pgd_sols->solutions.size(); i++)
         previous_sols.push_back(pgd_sols->solutions.at(i));
+    if(pgd_sols->definition.use_dirichlet_lift())
+    {
+        previous_sols.push_back(pgd_sols->dirichlet_lift);
+        assert(previous_sols.size() == pgd_sols->solutions.size() + 1);
+    }
     set_ext(previous_sols);
 }
 
