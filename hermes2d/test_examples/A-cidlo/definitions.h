@@ -145,7 +145,7 @@ public:
             result[0] += wt[i] * (fns[0]->val[i]);
         }
         result[0] *= coeff;
-    };
+    }
 
     virtual void order(Func<Hermes::Ord> **fns, Hermes::Ord* result) {
         result[0] = Hermes::Ord(21);
@@ -155,16 +155,19 @@ public:
 
 };
 
-class CombinationFilter : public Hermes::Hermes2D::SimpleFilter<double>
+class CombinationFilter : public Hermes::Hermes2D::DXDYFilter<double>
 {
 public:
     CombinationFilter(Hermes::vector<MeshFunctionSharedPtr<double> > slns, std::vector<Function1D> parameters, double parameter_value) :
-        SimpleFilter(slns), solutions(slns), parameters(parameters), parameter_value(parameter_value) {}
-    virtual void filter_fn(int n, Hermes::vector<double*> values, double* result)
+        DXDYFilter(slns), parameters(parameters), parameter_value(parameter_value) {}
+    virtual void filter_fn(int n, double* x, double* y, Hermes::vector<const double *> values, Hermes::vector<const double *> dx, Hermes::vector<const double *> dy, double* rslt, double* rslt_dx, double* rslt_dy)
     {
         for (int i = 0; i < n; i++)
         {
-            result[i] = 0;
+            rslt[i] = 0;
+            rslt_dx[i] = 0;
+            rslt_dy[i] = 0;
+
             int num_modes = parameters.size();
 
             // the last value is the Dirichlet lift
@@ -172,27 +175,32 @@ public:
 
             for (unsigned int j = 0; j < num_modes; j++)
             {
-                result[i] += values.at(j)[i] * parameters.at(j).value(parameter_value);
+                rslt[i] += values.at(j)[i] * parameters.at(j).value(parameter_value);
+                rslt_dx[i] +=  dx.at(j)[i] * parameters.at(j).value(parameter_value);
+                rslt_dy[i] +=  dy.at(j)[i] * parameters.at(j).value(parameter_value);
             }
 
-            result[i] += values.at(num_modes)[i];
+            rslt[i] += values.at(num_modes)[i];
+            rslt_dx[i] +=  dx.at(num_modes)[i];
+            rslt_dy[i] +=  dy.at(num_modes)[i];
         }
     }
     
     virtual MeshFunction<double>* clone() const
     {
         Hermes::vector<MeshFunctionSharedPtr<double> > slns;
-        //std::vector<Function1D> params;
+
+        assert(this->num == parameters.size() + 1);
         for (int i = 0; i < this->num; i++)
         {
           slns.push_back(this->sln[i]->clone());
         }
+
         CombinationFilter* filter = new CombinationFilter(slns, parameters, parameter_value);
         return filter;
     }
 
 private:
-    Hermes::vector<MeshFunctionSharedPtr<double> > solutions;
     std::vector<Function1D> parameters;
     double parameter_value;
 };

@@ -7,7 +7,7 @@ using namespace Hermes::Hermes2D;
 const double MIN_EPS = 1 * EPS0;
 const double MAX_EPS = 10 * EPS0;
 
-const int NUM_STEPS = 6;
+const int NUM_MODES = 1;
 const int MAX_STEP_ITERATIONS = 20;
 const double STEP_ITERATIONS_TOLERANCE = 1e-2;
 
@@ -116,6 +116,18 @@ double calc_integral_u_f(MeshFunctionSharedPtr<double> sln, double coeff)
     double res = result[0];
     delete[] result;
     return res;
+}
+
+double calc_energy(MeshFunctionSharedPtr<double> sln, ProblemDefinition definition, Perms perms)
+{
+    double result = 0;
+
+    result += perms.EPS_AIR * calc_integral_grad_u_grad_v(sln, sln, definition.labels_air);
+    result += perms.EPS_EMPTY * calc_integral_grad_u_grad_v(sln, sln, definition.labels_empty);
+    result += perms.EPS_KARTIT * calc_integral_grad_u_grad_v(sln, sln, definition.labels_kartit);
+    result += perms.EPS_FULL * calc_integral_grad_u_grad_v(sln, sln, definition.labels_full);
+
+    return result;
 }
 
 Function1D PGDSolutions::iteration_update_parameter()
@@ -267,7 +279,7 @@ PGDSolutions pgd_run(ProblemDefinition definition, Perms perms, MeshSharedPtr me
         pgd_solutions.dirichlet_lift = solve_problem(definition, AllOnePerms(), mesh, false);
     }
 
-    for(int i = 0; i < NUM_STEPS; i++)
+    for(int i = 0; i < NUM_MODES; i++)
     {
         pgd_solutions.find_new_pair();
 
@@ -404,6 +416,8 @@ int main(int argc, char* argv[])
     //test_external_dirichlet_lift(definition, perms, mesh);
 
     PGDSolutions pgd_solutions = pgd_run(definition, perms, mesh);
+    //double energy = calc_integral_energy(pgd_solutions.get_filter(2.*EPS0), definition, perms);
+    double energy = calc_energy(pgd_solutions.get_filter(2.*EPS0), definition, perms);
     pgd_results(pgd_solutions);
 
     return 0;

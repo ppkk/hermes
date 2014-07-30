@@ -277,7 +277,7 @@ struct PGDSolutions
         return result;
     }
 
-    MeshFunctionSharedPtr<double>  get_filter(double parameter_value);
+    MeshFunctionSharedPtr<double> get_filter(double parameter_value);
 
     Function1D iteration_update_parameter();
     MeshFunctionSharedPtr<double> iteration_update_solution();
