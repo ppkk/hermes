@@ -162,22 +162,27 @@ public:
         DXDYFilter(slns), parameters(parameters), parameter_value(parameter_value) {}
     virtual void filter_fn(int n, double* x, double* y, Hermes::vector<const double *> values, Hermes::vector<const double *> dx, Hermes::vector<const double *> dy, double* rslt, double* rslt_dx, double* rslt_dy)
     {
+        int num_modes = parameters.size();
+
+        double parameter_values_precalc[num_modes];
+        for(unsigned int j = 0; j < num_modes; j++)
+            parameter_values_precalc[j] = parameters.at(j).value(parameter_value);
+
         for (int i = 0; i < n; i++)
         {
             rslt[i] = 0;
             rslt_dx[i] = 0;
             rslt_dy[i] = 0;
 
-            int num_modes = parameters.size();
 
             // the last value is the Dirichlet lift
             assert(values.size() == num_modes + 1);
 
             for (unsigned int j = 0; j < num_modes; j++)
             {
-                rslt[i] += values.at(j)[i] * parameters.at(j).value(parameter_value);
-                rslt_dx[i] +=  dx.at(j)[i] * parameters.at(j).value(parameter_value);
-                rslt_dy[i] +=  dy.at(j)[i] * parameters.at(j).value(parameter_value);
+                rslt[i] += values.at(j)[i] * parameter_values_precalc[j];
+                rslt_dx[i] +=  dx.at(j)[i] * parameter_values_precalc[j];
+                rslt_dy[i] +=  dy.at(j)[i] * parameter_values_precalc[j];
             }
 
             rslt[i] += values.at(num_modes)[i];

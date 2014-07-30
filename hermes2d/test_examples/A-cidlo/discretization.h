@@ -277,7 +277,8 @@ struct PGDSolutions
         return result;
     }
 
-    MeshFunctionSharedPtr<double> get_filter(double parameter_value);
+    // if num_modes == -1 use all of them
+    MeshFunctionSharedPtr<double> get_filter(double parameter_value, int num_modes = -1);
 
     Function1D iteration_update_parameter();
     MeshFunctionSharedPtr<double> iteration_update_solution();

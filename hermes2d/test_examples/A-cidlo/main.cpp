@@ -7,7 +7,7 @@ using namespace Hermes::Hermes2D;
 const double MIN_EPS = 1 * EPS0;
 const double MAX_EPS = 10 * EPS0;
 
-const int NUM_MODES = 1;
+const int NUM_MODES = 5;
 const int MAX_STEP_ITERATIONS = 20;
 const double STEP_ITERATIONS_TOLERANCE = 1e-2;
 
@@ -127,7 +127,7 @@ double calc_energy(MeshFunctionSharedPtr<double> sln, ProblemDefinition definiti
     result += perms.EPS_KARTIT * calc_integral_grad_u_grad_v(sln, sln, definition.labels_kartit);
     result += perms.EPS_FULL * calc_integral_grad_u_grad_v(sln, sln, definition.labels_full);
 
-    return result;
+    return 0.5 * result;
 }
 
 Function1D PGDSolutions::iteration_update_parameter()
@@ -270,7 +270,7 @@ void PGDSolutions::find_new_pair()
 
 PGDSolutions pgd_run(ProblemDefinition definition, Perms perms, MeshSharedPtr mesh)
 {
-    convergence_file = fopen("pic/convergence.dat", "w");
+    convergence_file = fopen("data/convergence.dat", "w");
 
     PGDSolutions pgd_solutions(definition, perms, mesh);
 
@@ -289,7 +289,7 @@ PGDSolutions pgd_run(ProblemDefinition definition, Perms perms, MeshSharedPtr me
         Function1D last_param = pgd_solutions.parameters.back();
 
         char filename[30];
-        sprintf(filename, "pic/parameter%03d.dat", i);
+        sprintf(filename, "data/parameter%03d.dat", i);
         FILE* file;
         file = fopen(filename, "w");
         for(int i = 0; i < last_param.n_points; i++)
@@ -309,15 +309,20 @@ void pgd_results(PGDSolutions pgd_solutions)
     Perms perms = pgd_solutions.perms;
     MeshSharedPtr mesh = pgd_solutions.mesh;
 
-    FILE* file_norm = fopen("pic/normal_calculations.dat", "w");
-    FILE* file_pgd = fopen("pic/pgd_calculations.dat", "w");
+    FILE* file_norm_point = fopen("data/normal_calculations_point.dat", "w");
+    FILE* file_pgd_point = fopen("data/pgd_calculations_point.dat", "w");
+    FILE* file_norm_energy = fopen("data/normal_calculations_energy.dat", "w");
+    FILE* file_pgd_energy = fopen("data/pgd_calculations_energy.dat", "w");
 
     for(double eps = MIN_EPS; eps <= MAX_EPS; eps += (MAX_EPS - MIN_EPS) / 10)
     {
         perms.EPS_FULL = eps;
         MeshFunctionSharedPtr<double> ref_sln = solve_problem(definition, perms, mesh, false);
         double val_ref = ref_sln->get_pt_value(test_x, test_y)->val[0];
-        fprintf(file_norm, "%g  %g\n", eps/EPS0, val_ref);
+        double energy_ref = calc_energy(ref_sln, definition, perms);
+
+        fprintf(file_norm_point, "%g  %g\n", eps/EPS0, val_ref);
+        fprintf(file_norm_energy, "%g  %g\n", eps/EPS0, energy_ref);
 
         viewS.show(ref_sln);
         char sol_name[20];
@@ -332,17 +337,24 @@ void pgd_results(PGDSolutions pgd_solutions)
 
     for(double eps = MIN_EPS; eps <= MAX_EPS; eps += (MAX_EPS - MIN_EPS) / 30)
     {
-        fprintf(file_pgd, "%g  ", eps/EPS0);
+        fprintf(file_pgd_point, "%g  ", eps/EPS0);
+        fprintf(file_pgd_energy, "%g  ", eps/EPS0);
         for(int num_modes = 1; num_modes <= pgd_solutions.solutions.size(); num_modes++)
         {
             double val = pgd_solutions.get_pt_value(test_x, test_y, eps, num_modes);
-            fprintf(file_pgd, "%g  ", val);
-        }
-        fprintf(file_pgd, "\n");
+            perms.EPS_FULL = eps;
+            double energy = calc_energy(pgd_solutions.get_filter(eps, num_modes), definition, perms);
+            fprintf(file_pgd_point, "%g  ", val);
+            fprintf(file_pgd_energy, "%g  ", energy);
+  }
+        fprintf(file_pgd_point, "\n");
+        fprintf(file_pgd_energy, "\n");
     }
 
-    fclose(file_norm);
-    fclose(file_pgd);
+    fclose(file_norm_point);
+    fclose(file_pgd_point);
+    fclose(file_norm_energy);
+    fclose(file_pgd_energy);
 }
 
 void simple_run(ProblemDefinition definition, Perms perms, MeshSharedPtr mesh, bool external_dirichlet_lift)
@@ -383,6 +395,22 @@ void test_external_dirichlet_lift(ProblemDefinition definition, Perms perms, Mes
 }
 
 
+void test_pgd_energy(PGDSolutions pgd_solutions)
+{
+    ProblemDefinition definition = pgd_solutions.definition;
+    Perms perms = pgd_solutions.perms;
+    MeshSharedPtr mesh = pgd_solutions.mesh;
+
+    double perm = 3*EPS0;
+    perms.EPS_FULL = perm;
+
+    MeshFunctionSharedPtr<double> ref_sln = solve_problem(definition, perms, mesh, false);
+
+    double energy_pgd = calc_energy(pgd_solutions.get_filter(perm), definition, perms);
+    double energy_ref = calc_energy(ref_sln, definition, perms);
+    printf("energies : %g, %g\n", energy_pgd, energy_ref);
+}
+
 int main(int argc, char* argv[])
 {
     Function1D::test();
@@ -416,8 +444,7 @@ int main(int argc, char* argv[])
     //test_external_dirichlet_lift(definition, perms, mesh);
 
     PGDSolutions pgd_solutions = pgd_run(definition, perms, mesh);
-    //double energy = calc_integral_energy(pgd_solutions.get_filter(2.*EPS0), definition, perms);
-    double energy = calc_energy(pgd_solutions.get_filter(2.*EPS0), definition, perms);
+    //test_pgd_energy(pgd_solutions);
     pgd_results(pgd_solutions);
 
     return 0;
