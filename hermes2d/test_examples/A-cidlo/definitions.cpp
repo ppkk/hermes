@@ -2,59 +2,59 @@
 
 /* Weak forms */
 
-CustomWeakFormPoisson::CustomWeakFormPoisson(ProblemDefinition definition, Perms perms, bool external_dirichlet_lift) : Hermes::Hermes2D::WeakForm<double>(1)
+CustomWeakFormPoisson::CustomWeakFormPoisson(ProblemDefinition* definition, Perms perms, bool external_dirichlet_lift) : Hermes::Hermes2D::WeakForm<double>(1)
 {
   // Matrix forms.
-    add_matrix_form(new Hermes::Hermes2D::WeakFormsH1::DefaultMatrixFormDiffusion<double>(0, 0, definition.labels_air, new Hermes::Hermes1DFunction<double>(perms.EPS_AIR)));
-    add_matrix_form(new Hermes::Hermes2D::WeakFormsH1::DefaultMatrixFormDiffusion<double>(0, 0, definition.labels_kartit, new Hermes::Hermes1DFunction<double>(perms.EPS_KARTIT)));
-    add_matrix_form(new Hermes::Hermes2D::WeakFormsH1::DefaultMatrixFormDiffusion<double>(0, 0, definition.labels_full, new Hermes::Hermes1DFunction<double>(perms.EPS_FULL)));
-    add_matrix_form(new Hermes::Hermes2D::WeakFormsH1::DefaultMatrixFormDiffusion<double>(0, 0, definition.labels_empty, new Hermes::Hermes1DFunction<double>(perms.EPS_EMPTY)));
+    add_matrix_form(new Hermes::Hermes2D::WeakFormsH1::DefaultMatrixFormDiffusion<double>(0, 0, definition->labels_air, new Hermes::Hermes1DFunction<double>(perms.EPS_AIR)));
+    add_matrix_form(new Hermes::Hermes2D::WeakFormsH1::DefaultMatrixFormDiffusion<double>(0, 0, definition->labels_kartit, new Hermes::Hermes1DFunction<double>(perms.EPS_KARTIT)));
+    add_matrix_form(new Hermes::Hermes2D::WeakFormsH1::DefaultMatrixFormDiffusion<double>(0, 0, definition->labels_full, new Hermes::Hermes1DFunction<double>(perms.EPS_FULL)));
+    add_matrix_form(new Hermes::Hermes2D::WeakFormsH1::DefaultMatrixFormDiffusion<double>(0, 0, definition->labels_empty, new Hermes::Hermes1DFunction<double>(perms.EPS_EMPTY)));
 
     //Vector forms - for electrostatic should be removed(coeff = 0)
-    if(definition.SOURCE_TERM != 0.0)
-        add_vector_form(new Hermes::Hermes2D::WeakFormsH1::DefaultVectorFormVol<double>(0, Hermes::HERMES_ANY, new Hermes::Hermes2DFunction<double>(definition.SOURCE_TERM)));
+    if(definition->SOURCE_TERM != 0.0)
+        add_vector_form(new Hermes::Hermes2D::WeakFormsH1::DefaultVectorFormVol<double>(0, Hermes::HERMES_ANY, new Hermes::Hermes2DFunction<double>(definition->SOURCE_TERM)));
 
     // Dirichlet lift is not done using standard Hermes tools.
     // It is calculated separately (using relative permitivity == 1 in whole domain) and than added to the final solution
     if(external_dirichlet_lift)
     {
-        add_vector_form(new GradDirichletLiftTimesGradTest(0, definition.labels_air, -perms.EPS_AIR, 0));
-        add_vector_form(new GradDirichletLiftTimesGradTest(0, definition.labels_kartit, -perms.EPS_KARTIT, 0));
-        add_vector_form(new GradDirichletLiftTimesGradTest(0, definition.labels_full, -perms.EPS_FULL, 0));
-        add_vector_form(new GradDirichletLiftTimesGradTest(0, definition.labels_empty, -perms.EPS_EMPTY, 0));
+        add_vector_form(new GradDirichletLiftTimesGradTest(0, definition->labels_air, -perms.EPS_AIR, 0));
+        add_vector_form(new GradDirichletLiftTimesGradTest(0, definition->labels_kartit, -perms.EPS_KARTIT, 0));
+        add_vector_form(new GradDirichletLiftTimesGradTest(0, definition->labels_full, -perms.EPS_FULL, 0));
+        add_vector_form(new GradDirichletLiftTimesGradTest(0, definition->labels_empty, -perms.EPS_EMPTY, 0));
     }
 
 }
 
-CustomWeakFormPermitivity::CustomWeakFormPermitivity(ProblemDefinition definition, Perms perms) : Hermes::Hermes2D::WeakForm<double>(1)
+CustomWeakFormPermitivity::CustomWeakFormPermitivity(ProblemDefinition* definition, Perms perms) : Hermes::Hermes2D::WeakForm<double>(1)
 {
     // Matrix forms.
     add_matrix_form(new Hermes::Hermes2D::WeakFormsH1::DefaultMatrixFormVol<double>(0, 0));
 
     //Vector forms
-    add_vector_form(new Hermes::Hermes2D::WeakFormsH1::DefaultVectorFormVol<double>(0, definition.labels_air, new Hermes::Hermes2DFunction<double>(perms.EPS_AIR/EPS0)));
-    add_vector_form(new Hermes::Hermes2D::WeakFormsH1::DefaultVectorFormVol<double>(0, definition.labels_kartit, new Hermes::Hermes2DFunction<double>(perms.EPS_KARTIT/EPS0)));
-    add_vector_form(new Hermes::Hermes2D::WeakFormsH1::DefaultVectorFormVol<double>(0, definition.labels_full, new Hermes::Hermes2DFunction<double>(perms.EPS_FULL/EPS0)));
-    add_vector_form(new Hermes::Hermes2D::WeakFormsH1::DefaultVectorFormVol<double>(0, definition.labels_empty, new Hermes::Hermes2DFunction<double>(perms.EPS_EMPTY/EPS0)));
+    add_vector_form(new Hermes::Hermes2D::WeakFormsH1::DefaultVectorFormVol<double>(0, definition->labels_air, new Hermes::Hermes2DFunction<double>(perms.EPS_AIR/EPS0)));
+    add_vector_form(new Hermes::Hermes2D::WeakFormsH1::DefaultVectorFormVol<double>(0, definition->labels_kartit, new Hermes::Hermes2DFunction<double>(perms.EPS_KARTIT/EPS0)));
+    add_vector_form(new Hermes::Hermes2D::WeakFormsH1::DefaultVectorFormVol<double>(0, definition->labels_full, new Hermes::Hermes2DFunction<double>(perms.EPS_FULL/EPS0)));
+    add_vector_form(new Hermes::Hermes2D::WeakFormsH1::DefaultVectorFormVol<double>(0, definition->labels_empty, new Hermes::Hermes2DFunction<double>(perms.EPS_EMPTY/EPS0)));
 
 }
 
 
 WeakFormChangingPermInFull::WeakFormChangingPermInFull(const PGDSolutions* pgd_sols) : Hermes::Hermes2D::WeakForm<double>(1)
 {
-    assert(pgd_sols->parameters.size() == pgd_sols->solutions.size());
+    assert(pgd_sols->parameters[0].size() == pgd_sols->solutions.size());
 
-    double w1_air = pgd_sols->perms.EPS_AIR * pgd_sols->actual_parameter.int_F_F();
-    double w1_kartit = pgd_sols->perms.EPS_KARTIT * pgd_sols->actual_parameter.int_F_F();
-    double w1_empty = pgd_sols->perms.EPS_EMPTY * pgd_sols->actual_parameter.int_F_F();
+    double w1_air = pgd_sols->perms.EPS_AIR * pgd_sols->actual_parameter[0].int_F_F();
+    double w1_kartit = pgd_sols->perms.EPS_KARTIT * pgd_sols->actual_parameter[0].int_F_F();
+    double w1_empty = pgd_sols->perms.EPS_EMPTY * pgd_sols->actual_parameter[0].int_F_F();
 
     // integral with x -- full
-    double w1_full = pgd_sols->actual_parameter.int_x_F_F();
+    double w1_full = pgd_sols->actual_parameter[0].int_x_F_F();
 
-    add_matrix_form(new WeakFormsH1::DefaultMatrixFormDiffusion<double>(0, 0, pgd_sols->definition.labels_air, new Hermes1DFunction<double>(w1_air)));
-    add_matrix_form(new WeakFormsH1::DefaultMatrixFormDiffusion<double>(0, 0, pgd_sols->definition.labels_kartit, new Hermes1DFunction<double>(w1_kartit)));
-    add_matrix_form(new WeakFormsH1::DefaultMatrixFormDiffusion<double>(0, 0, pgd_sols->definition.labels_full, new Hermes1DFunction<double>(w1_full)));
-    add_matrix_form(new WeakFormsH1::DefaultMatrixFormDiffusion<double>(0, 0, pgd_sols->definition.labels_empty, new Hermes1DFunction<double>(w1_empty)));
+    add_matrix_form(new WeakFormsH1::DefaultMatrixFormDiffusion<double>(0, 0, pgd_sols->definition->labels_air, new Hermes1DFunction<double>(w1_air)));
+    add_matrix_form(new WeakFormsH1::DefaultMatrixFormDiffusion<double>(0, 0, pgd_sols->definition->labels_kartit, new Hermes1DFunction<double>(w1_kartit)));
+    add_matrix_form(new WeakFormsH1::DefaultMatrixFormDiffusion<double>(0, 0, pgd_sols->definition->labels_full, new Hermes1DFunction<double>(w1_full)));
+    add_matrix_form(new WeakFormsH1::DefaultMatrixFormDiffusion<double>(0, 0, pgd_sols->definition->labels_empty, new Hermes1DFunction<double>(w1_empty)));
 
     // Residual forms.
     std::vector<double> w2_air, w2_kartit, w2_empty, w2_full;
@@ -62,46 +62,46 @@ WeakFormChangingPermInFull::WeakFormChangingPermInFull(const PGDSolutions* pgd_s
     std::cout << "pushing " << pgd_sols->solutions.size() << " coefficients" << std::endl;
     for(int i = 0; i < pgd_sols->solutions.size(); i++)
     {
-        w2_air.push_back(-pgd_sols->perms.EPS_AIR * pgd_sols->actual_parameter.int_F_ExtF(pgd_sols->parameters[i]));
-        w2_kartit.push_back(-pgd_sols->perms.EPS_KARTIT * pgd_sols->actual_parameter.int_F_ExtF(pgd_sols->parameters[i]));
-        w2_empty.push_back(-pgd_sols->perms.EPS_EMPTY * pgd_sols->actual_parameter.int_F_ExtF(pgd_sols->parameters[i]));
+        w2_air.push_back(-pgd_sols->perms.EPS_AIR * pgd_sols->actual_parameter[0].int_F_ExtF(pgd_sols->parameters[0][i]));
+        w2_kartit.push_back(-pgd_sols->perms.EPS_KARTIT * pgd_sols->actual_parameter[0].int_F_ExtF(pgd_sols->parameters[0][i]));
+        w2_empty.push_back(-pgd_sols->perms.EPS_EMPTY * pgd_sols->actual_parameter[0].int_F_ExtF(pgd_sols->parameters[0][i]));
 
         // integral with x -- full
-        w2_full.push_back(-pgd_sols->actual_parameter.int_x_F_ExtF(pgd_sols->parameters[i]));
+        w2_full.push_back(-pgd_sols->actual_parameter[0].int_x_F_ExtF(pgd_sols->parameters[0][i]));
     }
 
-    add_vector_form(new GradPreviousSolsTimesGradTest(0, pgd_sols->definition.labels_air, w2_air));
-    add_vector_form(new GradPreviousSolsTimesGradTest(0, pgd_sols->definition.labels_kartit, w2_kartit));
-    add_vector_form(new GradPreviousSolsTimesGradTest(0, pgd_sols->definition.labels_full, w2_full));
-    add_vector_form(new GradPreviousSolsTimesGradTest(0, pgd_sols->definition.labels_empty, w2_empty));
+    add_vector_form(new GradPreviousSolsTimesGradTest(0, pgd_sols->definition->labels_air, w2_air));
+    add_vector_form(new GradPreviousSolsTimesGradTest(0, pgd_sols->definition->labels_kartit, w2_kartit));
+    add_vector_form(new GradPreviousSolsTimesGradTest(0, pgd_sols->definition->labels_full, w2_full));
+    add_vector_form(new GradPreviousSolsTimesGradTest(0, pgd_sols->definition->labels_empty, w2_empty));
 
     // RHS residual forms
-    if(pgd_sols->definition.SOURCE_TERM != 0.0)
+    if(pgd_sols->definition->SOURCE_TERM != 0.0)
     {
-        double w3 = pgd_sols->actual_parameter.int_F();
-        add_vector_form(new WeakFormsH1::DefaultVectorFormVol<double>(0, Hermes::HERMES_ANY, new Hermes::Hermes2DFunction<double>(w3 * pgd_sols->definition.SOURCE_TERM)));
+        double w3 = pgd_sols->actual_parameter[0].int_F();
+        add_vector_form(new WeakFormsH1::DefaultVectorFormVol<double>(0, Hermes::HERMES_ANY, new Hermes::Hermes2DFunction<double>(w3 * pgd_sols->definition->SOURCE_TERM)));
     }
 
     // Dirichlet lift
-    if(pgd_sols->definition.use_dirichlet_lift())
+    if(pgd_sols->definition->use_dirichlet_lift())
     {
-        double w3_air = -pgd_sols->perms.EPS_AIR * pgd_sols->actual_parameter.int_F();
-        double w3_empty = -pgd_sols->perms.EPS_EMPTY * pgd_sols->actual_parameter.int_F();
-        double w3_kartit = -pgd_sols->perms.EPS_KARTIT * pgd_sols->actual_parameter.int_F();
+        double w3_air = -pgd_sols->perms.EPS_AIR * pgd_sols->actual_parameter[0].int_F();
+        double w3_empty = -pgd_sols->perms.EPS_EMPTY * pgd_sols->actual_parameter[0].int_F();
+        double w3_kartit = -pgd_sols->perms.EPS_KARTIT * pgd_sols->actual_parameter[0].int_F();
 
-        double w3_full = -pgd_sols->actual_parameter.int_x_F();
+        double w3_full = -pgd_sols->actual_parameter[0].int_x_F();
 
         int dirichlet_lift_idx = pgd_sols->solutions.size();
-        add_vector_form(new GradDirichletLiftTimesGradTest(0, pgd_sols->definition.labels_air, w3_air, dirichlet_lift_idx));
-        add_vector_form(new GradDirichletLiftTimesGradTest(0, pgd_sols->definition.labels_empty, w3_empty, dirichlet_lift_idx));
-        add_vector_form(new GradDirichletLiftTimesGradTest(0, pgd_sols->definition.labels_kartit, w3_kartit, dirichlet_lift_idx));
-        add_vector_form(new GradDirichletLiftTimesGradTest(0, pgd_sols->definition.labels_full, w3_full, dirichlet_lift_idx));
+        add_vector_form(new GradDirichletLiftTimesGradTest(0, pgd_sols->definition->labels_air, w3_air, dirichlet_lift_idx));
+        add_vector_form(new GradDirichletLiftTimesGradTest(0, pgd_sols->definition->labels_empty, w3_empty, dirichlet_lift_idx));
+        add_vector_form(new GradDirichletLiftTimesGradTest(0, pgd_sols->definition->labels_kartit, w3_kartit, dirichlet_lift_idx));
+        add_vector_form(new GradDirichletLiftTimesGradTest(0, pgd_sols->definition->labels_full, w3_full, dirichlet_lift_idx));
     }
 
     Hermes::vector<MeshFunctionSharedPtr<double> > previous_sols;
     for(int i = 0; i < pgd_sols->solutions.size(); i++)
         previous_sols.push_back(pgd_sols->solutions.at(i));
-    if(pgd_sols->definition.use_dirichlet_lift())
+    if(pgd_sols->definition->use_dirichlet_lift())
     {
         previous_sols.push_back(pgd_sols->dirichlet_lift);
         assert(previous_sols.size() == pgd_sols->solutions.size() + 1);

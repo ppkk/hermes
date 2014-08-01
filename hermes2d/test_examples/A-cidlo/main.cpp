@@ -7,23 +7,23 @@ using namespace Hermes::Hermes2D;
 const double MIN_EPS = 1 * EPS0;
 const double MAX_EPS = 10 * EPS0;
 
-const int NUM_MODES = 5;
-const int MAX_STEP_ITERATIONS = 20;
+const int NUM_MODES = 2;
+const int MAX_STEP_ITERATIONS = 5;
 const double STEP_ITERATIONS_TOLERANCE = 1e-2;
 
 const double test_x = 0.03;
 const double test_y = 0.02;
 
 
-MeshFunctionSharedPtr<double> solve_problem(ProblemDefinition definition, Perms perms, MeshSharedPtr mesh, bool external_dirichlet_lift)
+MeshFunctionSharedPtr<double> solve_problem(ProblemDefinition* definition, Perms perms, MeshSharedPtr mesh, bool external_dirichlet_lift)
 {
     // Initialize essential boundary conditions.
-    Hermes::Hermes2D::DefaultEssentialBCConst<double> bc_essential_ground(definition.bc_labels_ground, 0);
-    double potential = external_dirichlet_lift ? 0 : definition.POTENTIAL;
-    Hermes::Hermes2D::DefaultEssentialBCConst<double> bc_essential_potential(definition.bc_labels_potential, potential);
+    Hermes::Hermes2D::DefaultEssentialBCConst<double> bc_essential_ground(definition->bc_labels_ground, 0);
+    double potential = external_dirichlet_lift ? 0 : definition->POTENTIAL;
+    Hermes::Hermes2D::DefaultEssentialBCConst<double> bc_essential_potential(definition->bc_labels_potential, potential);
     Hermes::Hermes2D::EssentialBCs<double> bcs(Hermes::vector<EssentialBoundaryCondition<double> *> (&bc_essential_ground, &bc_essential_potential));
 
-    SpaceSharedPtr<double> space(new Hermes::Hermes2D::H1Space<double>(mesh, &bcs, definition.P_INIT));
+    SpaceSharedPtr<double> space(new Hermes::Hermes2D::H1Space<double>(mesh, &bcs, definition->P_INIT));
     std::cout << "Ndofs: " << space->get_num_dofs() << std::endl;
 
     CustomWeakFormPoisson wf(definition, perms, external_dirichlet_lift);
@@ -64,7 +64,7 @@ MeshFunctionSharedPtr<double> solve_problem(ProblemDefinition definition, Perms 
     }
 }
 
-MeshFunctionSharedPtr<double> solve_permitivity(ProblemDefinition definition, Perms perms, MeshSharedPtr mesh)
+MeshFunctionSharedPtr<double> solve_permitivity(ProblemDefinition* definition, Perms perms, MeshSharedPtr mesh)
 {
     SpaceSharedPtr<double> space_perm(new Hermes::Hermes2D::H1Space<double>(mesh, nullptr, 3));
     CustomWeakFormPermitivity wf_perm(definition, perms);
@@ -88,7 +88,7 @@ MeshFunctionSharedPtr<double> solve_permitivity(ProblemDefinition definition, Pe
     }
 }
 
-double calc_integral_energy(MeshFunctionSharedPtr<double> sln, ProblemDefinition definition, Perms perms)
+double calc_integral_energy(MeshFunctionSharedPtr<double> sln, ProblemDefinition* definition, Perms perms)
 {
     EnergyIntegralCalculator integralCalculator(sln, definition, perms);
     double* result = new double[1];
@@ -118,52 +118,54 @@ double calc_integral_u_f(MeshFunctionSharedPtr<double> sln, double coeff)
     return res;
 }
 
-double calc_energy(MeshFunctionSharedPtr<double> sln, ProblemDefinition definition, Perms perms)
+double calc_energy(MeshFunctionSharedPtr<double> sln, ProblemDefinition* definition, Perms perms)
 {
     double result = 0;
 
-    result += perms.EPS_AIR * calc_integral_grad_u_grad_v(sln, sln, definition.labels_air);
-    result += perms.EPS_EMPTY * calc_integral_grad_u_grad_v(sln, sln, definition.labels_empty);
-    result += perms.EPS_KARTIT * calc_integral_grad_u_grad_v(sln, sln, definition.labels_kartit);
-    result += perms.EPS_FULL * calc_integral_grad_u_grad_v(sln, sln, definition.labels_full);
+    result += perms.EPS_AIR * calc_integral_grad_u_grad_v(sln, sln, definition->labels_air);
+    result += perms.EPS_EMPTY * calc_integral_grad_u_grad_v(sln, sln, definition->labels_empty);
+    result += perms.EPS_KARTIT * calc_integral_grad_u_grad_v(sln, sln, definition->labels_kartit);
+    result += perms.EPS_FULL * calc_integral_grad_u_grad_v(sln, sln, definition->labels_full);
 
     return 0.5 * result;
 }
 
 Function1D PGDSolutions::iteration_update_parameter()
 {
-    assert(solutions.size() == parameters.size());
+    assert(num_parameters == 1);
+    assert(solutions.size() == parameters[0].size());
+
     double a[solutions.size()], b[solutions.size()];
     double c, d, r3 = 0.0, r3_air = 0.0, r3_empty = 0.0, r3_kartit = 0.0, r3_full = 0.0;
     
     try
     {
-        if(definition.SOURCE_TERM != 0)
+        if(definition->SOURCE_TERM != 0)
         {
-            r3 = calc_integral_u_f(actual_solution, definition.SOURCE_TERM);
+            r3 = calc_integral_u_f(actual_solution, definition->SOURCE_TERM);
         }
 
-        if(definition.use_dirichlet_lift())
+        if(definition->use_dirichlet_lift())
         {
-            r3_air = calc_integral_grad_u_grad_v(actual_solution, dirichlet_lift, definition.labels_air);
-            r3_empty = calc_integral_grad_u_grad_v(actual_solution, dirichlet_lift, definition.labels_empty);
-            r3_kartit = calc_integral_grad_u_grad_v(actual_solution, dirichlet_lift, definition.labels_kartit);
-            r3_full = calc_integral_grad_u_grad_v(actual_solution, dirichlet_lift, definition.labels_full);
+            r3_air = calc_integral_grad_u_grad_v(actual_solution, dirichlet_lift, definition->labels_air);
+            r3_empty = calc_integral_grad_u_grad_v(actual_solution, dirichlet_lift, definition->labels_empty);
+            r3_kartit = calc_integral_grad_u_grad_v(actual_solution, dirichlet_lift, definition->labels_kartit);
+            r3_full = calc_integral_grad_u_grad_v(actual_solution, dirichlet_lift, definition->labels_full);
         }
         for(int i = 0; i < solutions.size(); i++)
         {
-            a[i] = calc_integral_grad_u_grad_v(actual_solution, solutions.at(i), definition.labels_full);
+            a[i] = calc_integral_grad_u_grad_v(actual_solution, solutions.at(i), definition->labels_full);
 
-            b[i]  = perms.EPS_AIR * calc_integral_grad_u_grad_v(actual_solution, solutions.at(i), definition.labels_air);
-            b[i] += perms.EPS_KARTIT * calc_integral_grad_u_grad_v(actual_solution, solutions.at(i), definition.labels_kartit);
-            b[i] += perms.EPS_EMPTY * calc_integral_grad_u_grad_v(actual_solution, solutions.at(i), definition.labels_empty);
+            b[i]  = perms.EPS_AIR * calc_integral_grad_u_grad_v(actual_solution, solutions.at(i), definition->labels_air);
+            b[i] += perms.EPS_KARTIT * calc_integral_grad_u_grad_v(actual_solution, solutions.at(i), definition->labels_kartit);
+            b[i] += perms.EPS_EMPTY * calc_integral_grad_u_grad_v(actual_solution, solutions.at(i), definition->labels_empty);
         }
 
-        c = calc_integral_grad_u_grad_v(actual_solution, actual_solution, definition.labels_full);
+        c = calc_integral_grad_u_grad_v(actual_solution, actual_solution, definition->labels_full);
 
-        d  = perms.EPS_AIR * calc_integral_grad_u_grad_v(actual_solution, actual_solution, definition.labels_air);
-        d += perms.EPS_KARTIT * calc_integral_grad_u_grad_v(actual_solution, actual_solution, definition.labels_kartit);
-        d += perms.EPS_EMPTY * calc_integral_grad_u_grad_v(actual_solution, actual_solution, definition.labels_empty);
+        d  = perms.EPS_AIR * calc_integral_grad_u_grad_v(actual_solution, actual_solution, definition->labels_air);
+        d += perms.EPS_KARTIT * calc_integral_grad_u_grad_v(actual_solution, actual_solution, definition->labels_kartit);
+        d += perms.EPS_EMPTY * calc_integral_grad_u_grad_v(actual_solution, actual_solution, definition->labels_empty);
     }
     catch (Exceptions::Exception& e)
     {
@@ -174,7 +176,7 @@ Function1D PGDSolutions::iteration_update_parameter()
         std::cout << e.what();
     }
 
-    Function1D newParam(actual_parameter.bound_lo, actual_parameter.bound_hi, actual_parameter.n_intervals);
+    Function1D newParam(actual_parameter[0].bound_lo, actual_parameter[0].bound_hi, actual_parameter[0].n_intervals);
     //std::cout <<"(a,b,c,d): " << a << ", " << b << ", " << c << ", " << d << std::endl;
     for(int point_idx = 0; point_idx < newParam.n_points; point_idx++)
     {
@@ -183,7 +185,7 @@ Function1D PGDSolutions::iteration_update_parameter()
         double nominator = r3 - epsilon * r3_full - perms.EPS_AIR * r3_air - perms.EPS_EMPTY * r3_empty - perms.EPS_KARTIT * r3_kartit;
         for(int previous_sol = 0; previous_sol < solutions.size(); previous_sol++)
         {
-            nominator -= (a[previous_sol] * epsilon +  b[previous_sol]) * parameters[previous_sol].value(epsilon);
+            nominator -= (a[previous_sol] * epsilon +  b[previous_sol]) * parameters[0][previous_sol].value(epsilon);
         }
         newParam.values[point_idx] = nominator / (c * epsilon + d);
     }
@@ -203,13 +205,13 @@ MeshFunctionSharedPtr<double> PGDSolutions::iteration_update_solution()
     WeakFormChangingPermInFull wf(this);
 
     // Initialize essential boundary conditions.
-    Hermes::Hermes2D::DefaultEssentialBCConst<double> bc_essential_ground(definition.bc_labels_ground, 0);
+    Hermes::Hermes2D::DefaultEssentialBCConst<double> bc_essential_ground(definition->bc_labels_ground, 0);
 
     // We use 0 Dirichlet BC everywhere. Dirichlet lift is handled separately
-    Hermes::Hermes2D::DefaultEssentialBCConst<double> bc_essential_potential(definition.bc_labels_potential, 0);
+    Hermes::Hermes2D::DefaultEssentialBCConst<double> bc_essential_potential(definition->bc_labels_potential, 0);
     Hermes::Hermes2D::EssentialBCs<double> bcs(Hermes::vector<EssentialBoundaryCondition<double> *> (&bc_essential_ground, &bc_essential_potential));
 
-    SpaceSharedPtr<double> space(new Hermes::Hermes2D::H1Space<double>(mesh, &bcs, definition.P_INIT));
+    SpaceSharedPtr<double> space(new Hermes::Hermes2D::H1Space<double>(mesh, &bcs, definition->P_INIT));
     std::cout << "Ndofs: " << space->get_num_dofs() << std::endl;
 
     MeshFunctionSharedPtr<double> sln(new Solution<double>);
@@ -245,7 +247,7 @@ Hermes::Hermes2D::Views::ScalarView viewS("Solution", new Hermes::Hermes2D::View
 void PGDSolutions::find_new_pair()
 {
     Function1D func_init(MIN_EPS, MAX_EPS, 100, 1);
-    actual_parameter = func_init;
+    actual_parameter[0] = func_init;
 
     double difference = 1e10;
     int iteration = 1;
@@ -256,25 +258,25 @@ void PGDSolutions::find_new_pair()
         actual_solution = new_solution;
         viewS.show(actual_solution);
         Function1D new_parameter = iteration_update_parameter();
-        difference = new_parameter.diference(actual_parameter) / new_parameter.norm();
+        difference = new_parameter.diference(actual_parameter[0]) / new_parameter.norm();
         fprintf(convergence_file, "%g ", difference);
         //new_parameter.print_short();
-        actual_parameter = new_parameter;
+        actual_parameter[0] = new_parameter;
         iteration++;
     }
     fprintf(convergence_file, "\n");
-    parameters.push_back(actual_parameter);
+    parameters[0].push_back(actual_parameter[0]);
     solutions.push_back(actual_solution);
 
 }
 
-PGDSolutions pgd_run(ProblemDefinition definition, Perms perms, MeshSharedPtr mesh)
+PGDSolutions pgd_run_one_changing_area(ProblemDefinition* definition, Perms perms, MeshSharedPtr mesh)
 {
     convergence_file = fopen("data/convergence.dat", "w");
 
-    PGDSolutions pgd_solutions(definition, perms, mesh);
+    PGDSolutions pgd_solutions(definition, perms, mesh, 1);
 
-    if(pgd_solutions.definition.use_dirichlet_lift())
+    if(pgd_solutions.definition->use_dirichlet_lift())
     {
         pgd_solutions.dirichlet_lift = solve_problem(definition, AllOnePerms(), mesh, false);
     }
@@ -286,7 +288,7 @@ PGDSolutions pgd_run(ProblemDefinition definition, Perms perms, MeshSharedPtr me
         std::cout << "NUMBER OF SOLS " << pgd_solutions.solutions.size() << std::endl;
 
         viewS.save_numbered_screenshot("pic/sol_mode%03d.bmp", i);
-        Function1D last_param = pgd_solutions.parameters.back();
+        Function1D last_param = pgd_solutions.parameters[0].back();
 
         char filename[30];
         sprintf(filename, "data/parameter%03d.dat", i);
@@ -305,7 +307,7 @@ PGDSolutions pgd_run(ProblemDefinition definition, Perms perms, MeshSharedPtr me
 
 void pgd_results(PGDSolutions pgd_solutions)
 {
-    ProblemDefinition definition = pgd_solutions.definition;
+    ProblemDefinition* definition = pgd_solutions.definition;
     Perms perms = pgd_solutions.perms;
     MeshSharedPtr mesh = pgd_solutions.mesh;
 
@@ -357,7 +359,7 @@ void pgd_results(PGDSolutions pgd_solutions)
     fclose(file_pgd_energy);
 }
 
-void simple_run(ProblemDefinition definition, Perms perms, MeshSharedPtr mesh, bool external_dirichlet_lift)
+void simple_run(ProblemDefinition* definition, Perms perms, MeshSharedPtr mesh, bool external_dirichlet_lift)
 {
     MeshFunctionSharedPtr<double> sln = solve_problem(definition, perms, mesh, external_dirichlet_lift);
     MeshFunctionSharedPtr<double> sln_perm = solve_permitivity(definition, perms, mesh);
@@ -374,7 +376,7 @@ void simple_run(ProblemDefinition definition, Perms perms, MeshSharedPtr mesh, b
     viewS.wait_for_close();
 }
 
-void test_external_dirichlet_lift(ProblemDefinition definition, Perms perms, MeshSharedPtr mesh)
+void test_external_dirichlet_lift(ProblemDefinition* definition, Perms perms, MeshSharedPtr mesh)
 {
     MeshFunctionSharedPtr<double> sln1 = solve_problem(definition, perms, mesh, true);
     MeshFunctionSharedPtr<double> sln2 = solve_problem(definition, perms, mesh, false);
@@ -397,7 +399,7 @@ void test_external_dirichlet_lift(ProblemDefinition definition, Perms perms, Mes
 
 void test_pgd_energy(PGDSolutions pgd_solutions)
 {
-    ProblemDefinition definition = pgd_solutions.definition;
+    ProblemDefinition* definition = pgd_solutions.definition;
     Perms perms = pgd_solutions.perms;
     MeshSharedPtr mesh = pgd_solutions.mesh;
 
@@ -415,36 +417,37 @@ int main(int argc, char* argv[])
 {
     Function1D::test();
 
-    Hermes::vector<int> profile_coarse(0,0,16,16,16,16,0,0);
+    Hermes::vector<int> profile_coarse(18,0,16,16,16,16,0,1);
 
     int active_electrode = 4;
     double eps_rel_material = 7;
 
-    ProblemConfiguration configuration(profile_coarse, active_electrode);
     StandardPerms perms(eps_rel_material);
-    ProblemDefinitionCidlo1 definition(configuration);
+    ProblemDefinition* definition = new ProblemDefinitionCidlo1();
+    definition->set_profile(profile_coarse);
+    definition->set_active_electrode(active_electrode);
     //ProblemDefinitionUnitSquare definition(configuration);
     //ProblemDefinitionUnitSquareDivided definition(configuration);
 
     // first solve for homogeneous BC only!
-    //definition.POTENTIAL = 0.0;
-    //definition.SOURCE_TERM = 1.0;
+    //definition->POTENTIAL = 0.0;
+    //definition->SOURCE_TERM = 1.0;
 
 
     // Load the mesh.
     MeshSharedPtr mesh(new Mesh);
     Hermes::Hermes2D::MeshReaderH2DXML mloader;
-    mloader.load(definition.mesh_name, mesh);
+    mloader.load(definition->mesh_name, mesh);
 
     // Refine all elements, do it INIT_REF_NUM-times.
-    for (unsigned int i = 0; i < definition.INIT_REF_NUM; i++)
+    for (unsigned int i = 0; i < definition->INIT_REF_NUM; i++)
         mesh->refine_all_elements();
 
     //simple_run(definition, perms, mesh, true);
     //test_external_dirichlet_lift(definition, perms, mesh);
 
-    PGDSolutions pgd_solutions = pgd_run(definition, perms, mesh);
-    //test_pgd_energy(pgd_solutions);
+    PGDSolutions pgd_solutions = pgd_run_one_changing_area(definition, perms, mesh);
+    test_pgd_energy(pgd_solutions);
     pgd_results(pgd_solutions);
 
     return 0;

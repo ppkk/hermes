@@ -8,16 +8,27 @@ MeshFunctionSharedPtr<double> PGDSolutions::get_filter(double parameter_value, i
     assert((num_modes >= 0) && (num_modes <= solutions.size()));
 
     Hermes::vector<MeshFunctionSharedPtr<double> > slns;
-    std::vector<Function1D> params;
+    //std::vector<Function1D> params;
     for(int i = 0; i < num_modes; i++){
         slns.push_back(solutions.at(i));
-        params.push_back(parameters.at(i));
+        //params.push_back(parameters.at(i));
     }
 
     slns.push_back(dirichlet_lift);
 
-    CombinationFilter *cf = new CombinationFilter(slns, params, parameter_value);
+    CombinationFilter *cf = new CombinationFilter(slns, parameters, parameter_value);
     return MeshFunctionSharedPtr<double> (cf);
 }
 
 
+Function1D::~Function1D()
+{
+    if(points)
+    {
+        assert(values);
+        delete[] values;
+        delete[] points;
+    }
+    else
+        assert(values == nullptr);
+}

@@ -41,7 +41,7 @@ struct Function1D
 
     Function1D& operator=(const Function1D &origin)
     {
-        copy_from(origin);
+        return copy_from(origin);
     }
 
     Function1D& copy_from(const Function1D &origin)
@@ -50,8 +50,17 @@ struct Function1D
         n_points = origin.n_points;
         bound_lo = origin.bound_lo;
         bound_hi = origin.bound_hi;
-        points = new double[n_points];
-        values = new double[n_points];
+        if(n_points > 0)
+        {
+            points = new double[n_points];
+            values = new double[n_points];
+        }
+        else
+        {
+            points = nullptr;
+            values = nullptr;
+        }
+
         for(int i = 0; i < n_points; i++)
         {
             points[i] = origin.points[i];
@@ -62,14 +71,7 @@ struct Function1D
     }
 
 
-    ~Function1D()
-    {
-        if(points)
-        {
-            delete[] points;
-            delete[] values;
-        }
-    }
+    ~Function1D();
 
     void normalize_first_to_one()
     {
@@ -171,6 +173,7 @@ struct Function1D
     double int_x_F_ExtF(Function1D ext) const
     {
         double result = 0;
+        assert(n_intervals == ext.n_intervals);
         for(int i = 0; i < n_intervals; i++)
         {
             assert(points[i] == ext.points[i]);
@@ -258,20 +261,37 @@ struct Function1D
 
 struct PGDSolutions
 {
-    PGDSolutions(ProblemDefinition definition, Perms perms, MeshSharedPtr mesh) : definition(definition), perms(perms), mesh(mesh) {}
+    PGDSolutions(ProblemDefinition *definition, Perms perms, MeshSharedPtr mesh, int num_parameters) :
+        definition(definition), perms(perms), mesh(mesh), num_parameters(num_parameters)
+    {
+        for(int i = 0; i < num_parameters; i++)
+        {
+            parameters.push_back(std::vector<Function1D>());
+            Function1D fn;
+            actual_parameter.push_back(fn);
+        }
+    }
+
     double get_pt_value(double x, double y, double eps, int use_modes = -1)
-    {        
-        assert(solutions.size() == parameters.size());
+    {
+        for(int i = 0; i < num_parameters; i++)
+            assert(solutions.size() == parameters[i].size());
+
         if(use_modes == -1)
             use_modes = solutions.size();
 
         double result = 0;
         for(int i = 0; i < use_modes; i++)
         {
-            result += parameters.at(i).value(eps) * solutions.at(i)->get_pt_value(x, y)->val[0];
+            double value = solutions.at(i)->get_pt_value(x, y)->val[0];
+            for(int j = 0; j < num_parameters; j++)
+            {
+                value *= parameters[j].at(i).value(eps);
+            }
+            result += value;
         }
 
-        if(definition.use_dirichlet_lift())
+        if(definition->use_dirichlet_lift())
             result += dirichlet_lift->get_pt_value(x, y)->val[0];
 
         return result;
@@ -285,15 +305,21 @@ struct PGDSolutions
 
     void find_new_pair();
 
-    std::vector<Function1D> parameters;
+    int num_parameters;
+
+    // array of arrays of modes, that correspond to individual parameters
+    // parameters[parameter_idx][mode_idx]
+    std::vector<std::vector<Function1D> > parameters;
     std::vector<MeshFunctionSharedPtr<double> > solutions;
 
     MeshFunctionSharedPtr<double> dirichlet_lift;
 
-    Function1D actual_parameter;
+    // array of individual parameters
+    // actual_parameter[parameter_idx]
+    std::vector<Function1D> actual_parameter;
     MeshFunctionSharedPtr<double> actual_solution;
 
-    ProblemDefinition definition;
+    ProblemDefinition *definition;
     Perms perms;
     MeshSharedPtr mesh;
 };

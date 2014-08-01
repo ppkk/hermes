@@ -7,13 +7,13 @@ using namespace Hermes::Hermes2D;
 class CustomWeakFormPoisson : public Hermes::Hermes2D::WeakForm<double>
 {
 public:
-    CustomWeakFormPoisson(ProblemDefinition definition, Perms perms, bool external_dirichlet_lift);
+    CustomWeakFormPoisson(ProblemDefinition* definition, Perms perms, bool external_dirichlet_lift);
 };
 
 class CustomWeakFormPermitivity : public Hermes::Hermes2D::WeakForm<double>
 {
 public:
-    CustomWeakFormPermitivity(ProblemDefinition definition, Perms perms);
+    CustomWeakFormPermitivity(ProblemDefinition* definition, Perms perms);
 };
 
 class WeakFormChangingPermInFull : public Hermes::Hermes2D::WeakForm<double>
@@ -64,17 +64,17 @@ private:
 class EnergyIntegralCalculator : public PostProcessing::VolumetricIntegralCalculator<double>
 {
 public:
-    EnergyIntegralCalculator(MeshFunctionSharedPtr<double> source_function, ProblemDefinition definition, Perms perms) :
+    EnergyIntegralCalculator(MeshFunctionSharedPtr<double> source_function, ProblemDefinition* definition, Perms perms) :
         PostProcessing::VolumetricIntegralCalculator<double>(source_function, 1), definition(definition)
     {
         //memset(label_to_eps, 0, MAX_LABELS * sizeof(double));
         for(int i = 0; i < MAX_LABELS; i++)
             label_to_eps[i] = 0.;
 
-        add_labels(definition.labels_air, perms.EPS_AIR);
-        add_labels(definition.labels_kartit, perms.EPS_KARTIT);
-        add_labels(definition.labels_full, perms.EPS_FULL);
-        add_labels(definition.labels_empty, perms.EPS_EMPTY);
+        add_labels(definition->labels_air, perms.EPS_AIR);
+        add_labels(definition->labels_kartit, perms.EPS_KARTIT);
+        add_labels(definition->labels_full, perms.EPS_FULL);
+        add_labels(definition->labels_empty, perms.EPS_EMPTY);
     }
 
     void add_labels(Hermes::vector<std::string> labels, double eps)
@@ -105,7 +105,7 @@ public:
         result[0] = Hermes::Ord(21);
     }
 
-    ProblemDefinition definition;
+    ProblemDefinition* definition;
     static const int MAX_LABELS = 5000;
     double label_to_eps[MAX_LABELS];
 };
@@ -158,15 +158,23 @@ public:
 class CombinationFilter : public Hermes::Hermes2D::DXDYFilter<double>
 {
 public:
-    CombinationFilter(Hermes::vector<MeshFunctionSharedPtr<double> > slns, std::vector<Function1D> parameters, double parameter_value) :
+    CombinationFilter(Hermes::vector<MeshFunctionSharedPtr<double> > slns, std::vector<std::vector<Function1D> > parameters, double parameter_value) :
         DXDYFilter(slns), parameters(parameters), parameter_value(parameter_value) {}
     virtual void filter_fn(int n, double* x, double* y, Hermes::vector<const double *> values, Hermes::vector<const double *> dx, Hermes::vector<const double *> dy, double* rslt, double* rslt_dx, double* rslt_dy)
     {
-        int num_modes = parameters.size();
+        // number of different parameters
+        int num_parameters = parameters.size();
 
-        double parameter_values_precalc[num_modes];
-        for(unsigned int j = 0; j < num_modes; j++)
-            parameter_values_precalc[j] = parameters.at(j).value(parameter_value);
+        // number of modes - steps in iterative improvement of the solution
+        int num_modes = parameters[0].size();
+
+        for(int i = 0; i < num_parameters; i++)
+            assert(parameters[i].size() == num_modes);
+
+        double parameter_values_precalc[num_parameters][num_modes];
+        for(int parameter = 0; parameter < num_parameters; parameter++)
+            for(int mode = 0; mode < num_modes; mode++)
+                parameter_values_precalc[parameter][mode] = parameters[parameter][mode].value(parameter_value);
 
         for (int i = 0; i < n; i++)
         {
@@ -178,11 +186,22 @@ public:
             // the last value is the Dirichlet lift
             assert(values.size() == num_modes + 1);
 
-            for (unsigned int j = 0; j < num_modes; j++)
+            for (int mode = 0; mode < num_modes; mode++)
             {
-                rslt[i] += values.at(j)[i] * parameter_values_precalc[j];
-                rslt_dx[i] +=  dx.at(j)[i] * parameter_values_precalc[j];
-                rslt_dy[i] +=  dy.at(j)[i] * parameter_values_precalc[j];
+                double val = values.at(mode)[i];
+                double val_dx = dx.at(mode)[i];
+                double val_dy = dy.at(mode)[i];
+
+                for(int parameter = 0; parameter < num_parameters; parameter++)
+                {
+                    val *= parameter_values_precalc[parameter][mode];
+                    val_dx *= parameter_values_precalc[parameter][mode];
+                    val_dy *= parameter_values_precalc[parameter][mode];
+                }
+
+                rslt[i] += val;
+                rslt_dx[i] += val_dx;
+                rslt_dy[i] += val_dy;
             }
 
             rslt[i] += values.at(num_modes)[i];
@@ -195,7 +214,7 @@ public:
     {
         Hermes::vector<MeshFunctionSharedPtr<double> > slns;
 
-        assert(this->num == parameters.size() + 1);
+        assert(this->num == parameters[0].size() + 1);
         for (int i = 0; i < this->num; i++)
         {
           slns.push_back(this->sln[i]->clone());
@@ -206,6 +225,6 @@ public:
     }
 
 private:
-    std::vector<Function1D> parameters;
+    std::vector<std::vector<Function1D> > parameters;
     double parameter_value;
 };
