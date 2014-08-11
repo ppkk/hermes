@@ -7,7 +7,7 @@ using namespace Hermes::Hermes2D;
 const double MIN_EPS = 1 * EPS0;
 const double MAX_EPS = 10 * EPS0;
 
-const int NUM_MODES = 2;
+const int NUM_MODES = 4;
 const int MAX_STEP_ITERATIONS = 5;
 const double STEP_ITERATIONS_TOLERANCE = 1e-2;
 
@@ -410,7 +410,7 @@ void test_pgd_energy(PGDSolutions pgd_solutions)
 
     double energy_pgd = calc_energy(pgd_solutions.get_filter(perm), definition, perms);
     double energy_ref = calc_energy(ref_sln, definition, perms);
-    printf("energies : %g, %g\n", energy_pgd, energy_ref);
+    printf("energies pgd: %g, ref: %g\n", energy_pgd, energy_ref);
 }
 
 int main(int argc, char* argv[])

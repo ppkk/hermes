@@ -159,7 +159,16 @@ class CombinationFilter : public Hermes::Hermes2D::DXDYFilter<double>
 {
 public:
     CombinationFilter(Hermes::vector<MeshFunctionSharedPtr<double> > slns, std::vector<std::vector<Function1D> > parameters, double parameter_value) :
-        DXDYFilter(slns), parameters(parameters), parameter_value(parameter_value) {}
+        DXDYFilter(slns), parameters(parameters), parameter_value(parameter_value)
+    {
+        int num_parameters = parameters.size();
+        assert(num_parameters > 0);
+        for(int i = 0; i < num_parameters; i++)
+        {
+            // +1 for dirichlet lift
+            assert(slns.size() == parameters.at(i).size() + 1);
+        }
+    }
     virtual void filter_fn(int n, double* x, double* y, Hermes::vector<const double *> values, Hermes::vector<const double *> dx, Hermes::vector<const double *> dy, double* rslt, double* rslt_dx, double* rslt_dy)
     {
         // number of different parameters
