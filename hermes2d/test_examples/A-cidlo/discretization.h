@@ -183,6 +183,59 @@ struct Function1D
         return result * int_length();
     }
 
+    // dependence of permitivity on the value of parameter for given element
+    // if parameter is below element,  value is empty
+    // if it is above, value is full
+    // approximated linearly inside the element (if noninteger values of parameter are allowed)
+    static double perm_on_parameter(double parameter, int element, Perms perms)
+    {
+        assert((element >= 0) && (element < N_HEIGHT_COARSE));
+        if(parameter < element)
+            return perms.EPS_EMPTY;
+        else if(parameter > element + 1)
+            return perms.EPS_FULL;
+        else
+        {
+            double ratio = parameter - element;
+            assert((ratio >= 0) && (ratio <= 1));
+            double result = perms.EPS_EMPTY + ratio * (perms.EPS_FULL - perms.EPS_EMPTY);
+            assert((result >= perms.EPS_EMPTY) && (result <= perms.EPS_FULL));
+            return result;
+        }
+    }
+
+    // integrals for the case of columns with the peremitivity FULL
+    // calculated for element 0 ...N_HEIGHT_COARSE - 1
+    // parameter has to be defined in [0, N_HEIGHT_COARSE]
+    double int_epsx_F(int element, Perms perms) const
+    {
+        double result = 0;
+        for(int i = 0; i < n_intervals; i++)
+        {
+            double perm_i = perm_on_parameter(points[i], element, perms);
+            double perm_i_plus_1 = perm_on_parameter(points[i+1], element, perms);
+
+            result += (perm_i * values[i] + perm_i_plus_1 * values[i+1]) / 2.;
+        }
+
+        return result * int_length();
+    }
+
+    double int_epsx_F_F(int element, Perms perms) const
+    {
+        double result = 0;
+        for(int i = 0; i < n_intervals; i++)
+        {
+            double perm_i = perm_on_parameter(points[i], element, perms);
+            double perm_i_plus_1 = perm_on_parameter(points[i+1], element, perms);
+
+            result += (perm_i * values[i] * values[i] + perm_i_plus_1 * values[i+1] * values[i+1]) / 2.;
+        }
+
+        return result * int_length();
+    }
+
+
     double diference(Function1D second) const
     {
         assert(second.n_points == this->n_points);
@@ -247,10 +300,24 @@ struct Function1D
         }
         int p = 5;
         double val_ref = (std::pow(3,p) - std::pow(2, p)) / p;
-        std::cout << x.int_F_F() << ", " << val_ref << std::endl;
+        std::cout << "should be similar " << x.int_F_F() << ", " << val_ref << std::endl;
         p = 6;
         val_ref = (std::pow(3,p) - std::pow(2, p)) / p;
-        std::cout << x.int_x_F_F() << ", " << val_ref << std::endl;
+        std::cout << "should be similar " << x.int_x_F_F() << ", " << val_ref << std::endl;
+
+        std::cout << std::endl << "Testing columns integrals " << std::endl << std::endl;
+        Perms perms;
+        perms.EPS_EMPTY = 1;
+        perms.EPS_FULL = 5;
+        for(int element = 0; element < N_HEIGHT_COARSE; element++)
+        {
+            std::cout << "element " << element << ": ";
+            for(double parameter = 0; parameter <= N_HEIGHT_COARSE; parameter += 0.5)
+            {
+                std::cout << perm_on_parameter(parameter, element, perms) << ", ";
+            }
+            std::cout << std::endl;
+        }
     }
 
     double bound_lo, bound_hi;

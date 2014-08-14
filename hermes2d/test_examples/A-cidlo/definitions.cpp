@@ -109,6 +109,25 @@ WeakFormChangingPermInFull::WeakFormChangingPermInFull(const PGDSolutions* pgd_s
     set_ext(previous_sols);
 }
 
+WeakFormMultipleColumns::WeakFormMultipleColumns(const PGDSolutions *pgd_sols)
+{
+    ProblemDefinition* problemDefinition = pgd_sols->definition;
+
+    // zatim jen pro jeden celkovy sloupec
+    assert(N_WIDTH_COARSE == 1);
+    for(int column_idx = 0; column_idx < N_WIDTH_COARSE; column_idx++)
+    {
+        for(int row_idx = 0; row_idx < N_HEIGHT_COARSE; row_idx++)
+        {
+            Hermes::vector<std::string> element_markers = problemDefinition->labels_square[column_idx][row_idx];
+            double w1 = pgd_sols->actual_parameter[0].int_epsx_F_F(row_idx, pgd_sols->perms);
+            add_matrix_form(new WeakFormsH1::DefaultMatrixFormDiffusion<double>(0, 0, element_markers, new Hermes1DFunction<double>(w1)));
+
+        }
+    }
+
+}
+
 GradPreviousSolsTimesGradTest::GradPreviousSolsTimesGradTest(int i, Hermes::vector<std::string> areas, std::vector<double> coeffs)
     : VectorFormVol<double>(i), coeffs(coeffs)
 {

@@ -10,16 +10,27 @@ public:
     CustomWeakFormPoisson(ProblemDefinition* definition, Perms perms, bool external_dirichlet_lift);
 };
 
+
+// Used to solve artificial problem used form permitivity visualisation
 class CustomWeakFormPermitivity : public Hermes::Hermes2D::WeakForm<double>
 {
 public:
     CustomWeakFormPermitivity(ProblemDefinition* definition, Perms perms);
 };
 
+// One part of the domain ("full") has changing permitivity
+// This weak form is used for the PGD approximation of this situation
 class WeakFormChangingPermInFull : public Hermes::Hermes2D::WeakForm<double>
 {
 public:
     WeakFormChangingPermInFull(const PGDSolutions* pgd_sols);
+};
+
+
+class WeakFormMultipleColumns : public Hermes::Hermes2D::WeakForm<double>
+{
+public:
+    WeakFormMultipleColumns(const PGDSolutions* pgd_sols);
 };
 
 class GradPreviousSolsTimesGradTest : public VectorFormVol<double>
