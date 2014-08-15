@@ -184,19 +184,19 @@ struct Function1D
     }
 
     // dependence of permitivity on the value of parameter for given element
-    // if parameter is below element,  value is empty
+    // if parameter is below element given by element_height,  value is empty
     // if it is above, value is full
-    // approximated linearly inside the element (if noninteger values of parameter are allowed)
-    static double perm_on_parameter(double parameter, int element, Perms perms)
+    // approximated linearly inside the element given by element_height (if noninteger values of parameter are allowed)
+    static double perm_on_parameter(double parameter, int element_height, Perms perms)
     {
-        assert((element >= 0) && (element < N_HEIGHT_COARSE));
-        if(parameter < element)
+        assert((element_height >= 0) && (element_height < N_HEIGHT_COARSE));
+        if(parameter < element_height)
             return perms.EPS_EMPTY;
-        else if(parameter > element + 1)
+        else if(parameter > element_height + 1)
             return perms.EPS_FULL;
         else
         {
-            double ratio = parameter - element;
+            double ratio = parameter - element_height;
             assert((ratio >= 0) && (ratio <= 1));
             double result = perms.EPS_EMPTY + ratio * (perms.EPS_FULL - perms.EPS_EMPTY);
             assert((result >= perms.EPS_EMPTY) && (result <= perms.EPS_FULL));
@@ -205,15 +205,15 @@ struct Function1D
     }
 
     // integrals for the case of columns with the peremitivity FULL
-    // calculated for element 0 ...N_HEIGHT_COARSE - 1
+    // calculated for element_heights 0 ...N_HEIGHT_COARSE - 1
     // parameter has to be defined in [0, N_HEIGHT_COARSE]
-    double int_epsx_F(int element, Perms perms) const
+    double int_epsx_F(int element_height, Perms perms) const
     {
         double result = 0;
         for(int i = 0; i < n_intervals; i++)
         {
-            double perm_i = perm_on_parameter(points[i], element, perms);
-            double perm_i_plus_1 = perm_on_parameter(points[i+1], element, perms);
+            double perm_i = perm_on_parameter(points[i], element_height, perms);
+            double perm_i_plus_1 = perm_on_parameter(points[i+1], element_height, perms);
 
             result += (perm_i * values[i] + perm_i_plus_1 * values[i+1]) / 2.;
         }
@@ -367,10 +367,11 @@ struct PGDSolutions
     // if num_modes == -1 use all of them
     MeshFunctionSharedPtr<double> get_filter(double parameter_value, int num_modes = -1);
 
-    Function1D iteration_update_parameter();
-    MeshFunctionSharedPtr<double> iteration_update_solution();
-
+    Function1D iteration_update_parameter_changing_perm();
+    MeshFunctionSharedPtr<double> iteration_update_solution_changing_perm();
     void find_new_pair();
+
+    Function1D iteration_update_parameter_columns();
 
     int num_parameters;
 

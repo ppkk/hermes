@@ -130,14 +130,14 @@ double calc_energy(MeshFunctionSharedPtr<double> sln, ProblemDefinition* definit
     return 0.5 * result;
 }
 
-Function1D PGDSolutions::iteration_update_parameter()
+Function1D PGDSolutions::iteration_update_parameter_changing_perm()
 {
     assert(num_parameters == 1);
     assert(solutions.size() == parameters[0].size());
 
     double a[solutions.size()], b[solutions.size()];
     double c, d, r3 = 0.0, r3_air = 0.0, r3_empty = 0.0, r3_kartit = 0.0, r3_full = 0.0;
-    
+
     try
     {
         if(definition->SOURCE_TERM != 0)
@@ -200,7 +200,91 @@ Function1D PGDSolutions::iteration_update_parameter()
     return newParam;
 }
 
-MeshFunctionSharedPtr<double> PGDSolutions::iteration_update_solution()
+Function1D PGDSolutions::iteration_update_parameter_columns()
+{
+    assert(num_parameters == 1);
+    assert(solutions.size() == parameters[0].size());
+
+    double r1_air, r1_kartit, r1_squares[N_HEIGHT_COARSE];
+    double r2_air[solutions.size()], r2_kartit[solutions.size()], r2_squares[solutions.size()][N_HEIGHT_COARSE];
+    double r3_air, r3_kartit, r3_squares[N_HEIGHT_COARSE];
+
+    try
+    {
+        assert(definition->use_dirichlet_lift());
+        assert(definition->SOURCE_TERM == 0.0);
+
+        assert(N_WIDTH_COARSE == 1);
+        int column = 0;
+
+        r1_air = calc_integral_grad_u_grad_v(actual_solution, actual_solution, definition->labels_air);
+        r1_kartit = calc_integral_grad_u_grad_v(actual_solution, actual_solution, definition->labels_kartit);
+        for(int row = 0; row < N_HEIGHT_COARSE; row++)
+            r1_squares[row] = calc_integral_grad_u_grad_v(actual_solution, actual_solution, definition->labels_square[column][row]);
+
+        r3_air = calc_integral_grad_u_grad_v(actual_solution, dirichlet_lift, definition->labels_air);
+        r3_kartit = calc_integral_grad_u_grad_v(actual_solution, dirichlet_lift, definition->labels_kartit);
+        for(int row = 0; row < N_HEIGHT_COARSE; row++)
+            r3_squares[row] = calc_integral_grad_u_grad_v(actual_solution, dirichlet_lift, definition->labels_square[column][row]);
+
+        for(int previous_sol_idx = 0; previous_sol_idx < solutions.size(); previous_sol_idx++)
+        {
+            r2_air[previous_sol_idx] = calc_integral_grad_u_grad_v(actual_solution, solutions.at(previous_sol_idx), definition->labels_air);
+            r2_kartit[previous_sol_idx] = calc_integral_grad_u_grad_v(actual_solution, solutions.at(previous_sol_idx), definition->labels_kartit);
+            for(int row = 0; row < N_HEIGHT_COARSE; row++)
+                r2_squares[previous_sol_idx][row] = calc_integral_grad_u_grad_v(actual_solution, solutions.at(previous_sol_idx), definition->labels_square[column][row]);
+        }
+    }
+    catch (Exceptions::Exception& e)
+    {
+        std::cout << e.info();
+    }
+    catch (std::exception& e)
+    {
+        std::cout << e.what();
+    }
+
+    Function1D newParam(actual_parameter[0].bound_lo, actual_parameter[0].bound_hi, actual_parameter[0].n_intervals);
+    //std::cout <<"(a,b,c,d): " << a << ", " << b << ", " << c << ", " << d << std::endl;
+    for(int point_idx = 0; point_idx < newParam.n_points; point_idx++)
+    {
+        double alpha = newParam.points[point_idx];
+
+        double nominator = 0.0;
+        nominator += -perms.EPS_AIR * r3_air;
+        nominator += -perms.EPS_KARTIT * r3_kartit;
+        for(int row = 0; row < N_HEIGHT_COARSE; row++)
+            nominator += -Function1D::perm_on_parameter(alpha, row, perms) * r3_squares[row];
+
+        for(int previous_sol = 0; previous_sol < solutions.size(); previous_sol++)
+        {
+            double  toadd = 0;
+            toadd += -perms.EPS_AIR * r2_air[previous_sol];
+            toadd += -perms.EPS_KARTIT * r2_kartit[previous_sol];
+            for(int row = 0; row < N_HEIGHT_COARSE; row++)
+                toadd += -Function1D::perm_on_parameter(alpha, row, perms) * r2_squares[previous_sol][row];
+            nominator += toadd * parameters[0][previous_sol].value(alpha);
+        }
+        double denominator = 0.0;
+        denominator += perms.EPS_AIR * r1_air;
+        denominator += perms.EPS_KARTIT * r1_kartit;
+        for(int row = 0; row < N_HEIGHT_COARSE; row++)
+            nominator += Function1D::perm_on_parameter(alpha, row, perms) * r1_squares[row];
+
+        newParam.values[point_idx] = nominator / denominator;
+    }
+
+    // !!!!!!!
+    // delim cely vektor prvnim clenem
+    // tak aby vzdy zacinal jednickou
+    // zrejme by se nemelo delat az bude nehomogenni Dirichletova podminka
+    //  !!!!!!!
+    //newParam.normalize_first_to_one();
+
+    return newParam;
+}
+
+MeshFunctionSharedPtr<double> PGDSolutions::iteration_update_solution_changing_perm()
 {
     WeakFormChangingPermInFull wf(this);
 
@@ -254,10 +338,10 @@ void PGDSolutions::find_new_pair()
     while((difference > STEP_ITERATIONS_TOLERANCE) && (iteration < MAX_STEP_ITERATIONS))
     {
         std::cout << "iteration " << iteration << std::endl;
-        MeshFunctionSharedPtr<double> new_solution = iteration_update_solution();
+        MeshFunctionSharedPtr<double> new_solution = iteration_update_solution_changing_perm();
         actual_solution = new_solution;
         viewS.show(actual_solution);
-        Function1D new_parameter = iteration_update_parameter();
+        Function1D new_parameter = iteration_update_parameter_changing_perm();
         difference = new_parameter.diference(actual_parameter[0]) / new_parameter.norm();
         fprintf(convergence_file, "%g ", difference);
         //new_parameter.print_short();
