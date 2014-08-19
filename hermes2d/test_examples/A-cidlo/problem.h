@@ -11,7 +11,7 @@ const double EPS0 = 8.854e-12;
 const int N_WIDTH = 80;
 const int N_HEIGHT = 18;
 
-const int N_WIDTH_COARSE = 8;
+const int N_WIDTH_COARSE = 1;
 const int N_HEIGHT_COARSE = 18;
 
 

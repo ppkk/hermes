@@ -73,12 +73,24 @@ struct Function1D
 
     ~Function1D();
 
-    void normalize_first_to_one()
+    void  normalize_first_to_one()
     {
         assert(values[0] != 0);
         double value_0 = values[0];
         for(int i = 0; i < n_points; i++)
             values[i] /= value_0;
+    }
+
+    void  normalize_l2_norm_to_one()
+    {
+        double norm = 0;
+        for(int i = 0; i < n_points; i++)
+            norm += values[i] * values[i];
+
+        norm = std::sqrt(norm);
+
+        for(int i = 0; i < n_points; i++)
+            values[i] /= norm;
     }
 
     double int_length() const
@@ -235,6 +247,22 @@ struct Function1D
         return result * int_length();
     }
 
+    double int_epsx_F_ExtF(int element, Perms perms, Function1D ext) const
+    {
+        double result = 0;
+        assert(n_intervals == ext.n_intervals);
+        for(int i = 0; i < n_intervals; i++)
+        {
+            double perm_i = perm_on_parameter(points[i], element, perms);
+            double perm_i_plus_1 = perm_on_parameter(points[i+1], element, perms);
+
+            assert(points[i] == ext.points[i]);
+            result += (perm_i * values[i] * ext.values[i] + perm_i_plus_1 * values[i+1] * ext.values[i+1]) / 2.;
+        }
+
+        return result * int_length();
+    }
+
 
     double diference(Function1D second) const
     {
@@ -312,7 +340,7 @@ struct Function1D
         for(int element = 0; element < N_HEIGHT_COARSE; element++)
         {
             std::cout << "element " << element << ": ";
-            for(double parameter = 0; parameter <= N_HEIGHT_COARSE; parameter += 0.5)
+            for(double parameter = 0; parameter <= N_HEIGHT_COARSE; parameter += 2)
             {
                 std::cout << perm_on_parameter(parameter, element, perms) << ", ";
             }
@@ -369,9 +397,13 @@ struct PGDSolutions
 
     Function1D iteration_update_parameter_changing_perm();
     MeshFunctionSharedPtr<double> iteration_update_solution_changing_perm();
-    void find_new_pair();
+    void find_new_pair_changing_perm();
 
     Function1D iteration_update_parameter_columns();
+    MeshFunctionSharedPtr<double> iteration_update_solution_columns();
+    void find_new_pair_columns();
+
+    MeshFunctionSharedPtr<double> iteration_update_solution(Hermes::Hermes2D::WeakForm<double>* wf);
 
     int num_parameters;
 

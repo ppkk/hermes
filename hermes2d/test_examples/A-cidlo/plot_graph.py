@@ -22,7 +22,7 @@ for i in range(1, data[0].size):
     y = data[:, i]
     plot(x, y, '-', label=str(i))    
 
-legend()
+legend(loc=2)
 
 # finalize
 #show()

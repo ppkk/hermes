@@ -113,19 +113,77 @@ WeakFormMultipleColumns::WeakFormMultipleColumns(const PGDSolutions *pgd_sols)
 {
     ProblemDefinition* problemDefinition = pgd_sols->definition;
 
+    double w1_air = pgd_sols->perms.EPS_AIR * pgd_sols->actual_parameter[0].int_F_F();
+    double w1_kartit = pgd_sols->perms.EPS_KARTIT * pgd_sols->actual_parameter[0].int_F_F();
+    add_matrix_form(new WeakFormsH1::DefaultMatrixFormDiffusion<double>(0, 0, pgd_sols->definition->labels_air, new Hermes1DFunction<double>(w1_air)));
+    add_matrix_form(new WeakFormsH1::DefaultMatrixFormDiffusion<double>(0, 0, pgd_sols->definition->labels_kartit, new Hermes1DFunction<double>(w1_kartit)));
     // zatim jen pro jeden celkovy sloupec
     assert(N_WIDTH_COARSE == 1);
-    for(int column_idx = 0; column_idx < N_WIDTH_COARSE; column_idx++)
+    for(int column = 0; column < N_WIDTH_COARSE; column++)
     {
-        for(int row_idx = 0; row_idx < N_HEIGHT_COARSE; row_idx++)
+        for(int row = 0; row < N_HEIGHT_COARSE; row++)
         {
-            Hermes::vector<std::string> element_markers = problemDefinition->labels_square[column_idx][row_idx];
-            double w1 = pgd_sols->actual_parameter[0].int_epsx_F_F(row_idx, pgd_sols->perms);
+            Hermes::vector<std::string> element_markers = problemDefinition->labels_square[column][row];
+            double w1 = pgd_sols->actual_parameter[0].int_epsx_F_F(row, pgd_sols->perms);
             add_matrix_form(new WeakFormsH1::DefaultMatrixFormDiffusion<double>(0, 0, element_markers, new Hermes1DFunction<double>(w1)));
-
         }
     }
 
+    assert(N_WIDTH_COARSE == 1);
+
+    // Residual forms.
+    std::vector<double> w2_air, w2_kartit, w2_squares[N_WIDTH_COARSE][N_HEIGHT_COARSE];
+
+    std::cout << "pushing " << pgd_sols->solutions.size() << " coefficients" << std::endl;
+    for(int previous_sol_idx = 0; previous_sol_idx < pgd_sols->solutions.size(); previous_sol_idx++)
+    {
+        w2_air.push_back(-pgd_sols->perms.EPS_AIR * pgd_sols->actual_parameter[0].int_F_ExtF(pgd_sols->parameters[0][previous_sol_idx]));
+        w2_kartit.push_back(-pgd_sols->perms.EPS_KARTIT * pgd_sols->actual_parameter[0].int_F_ExtF(pgd_sols->parameters[0][previous_sol_idx]));
+
+        assert(N_WIDTH_COARSE == 1);
+        for(int column = 0; column < N_WIDTH_COARSE; column++)
+            for(int row = 0; row < N_HEIGHT_COARSE; row++)
+                w2_squares[column][row].push_back(-pgd_sols->actual_parameter[0].int_epsx_F_ExtF(row, pgd_sols->perms, pgd_sols->parameters[0][previous_sol_idx]));
+    }
+
+    add_vector_form(new GradPreviousSolsTimesGradTest(0, pgd_sols->definition->labels_air, w2_air));
+    add_vector_form(new GradPreviousSolsTimesGradTest(0, pgd_sols->definition->labels_kartit, w2_kartit));
+
+    for(int column = 0; column < N_WIDTH_COARSE; column++)
+    {
+        for(int row = 0; row < N_HEIGHT_COARSE; row++)
+        {
+            add_vector_form(new GradPreviousSolsTimesGradTest(0, pgd_sols->definition->labels_square[column][row], w2_squares[column][row]));
+        }
+    }
+
+    // Dirichlet lift
+    assert(pgd_sols->definition->use_dirichlet_lift());
+    int dirichlet_lift_idx = pgd_sols->solutions.size();
+
+    double w3_air = -pgd_sols->perms.EPS_AIR * pgd_sols->actual_parameter[0].int_F();
+    double w3_kartit = -pgd_sols->perms.EPS_KARTIT * pgd_sols->actual_parameter[0].int_F();
+    add_vector_form(new GradDirichletLiftTimesGradTest(0, pgd_sols->definition->labels_air, w3_air, dirichlet_lift_idx));
+    add_vector_form(new GradDirichletLiftTimesGradTest(0, pgd_sols->definition->labels_kartit, w3_kartit, dirichlet_lift_idx));
+
+    assert(N_WIDTH_COARSE == 1);
+    for(int column = 0; column < N_WIDTH_COARSE; column++)
+    {
+        for(int row = 0; row < N_HEIGHT_COARSE; row++)
+        {
+            Hermes::vector<std::string> element_markers = problemDefinition->labels_square[column][row];
+            double w3 = -pgd_sols->actual_parameter[0].int_epsx_F(row, pgd_sols->perms);
+            add_vector_form(new GradDirichletLiftTimesGradTest(0, element_markers, w3, dirichlet_lift_idx));
+        }
+    }
+
+    Hermes::vector<MeshFunctionSharedPtr<double> > previous_sols;
+    for(int i = 0; i < pgd_sols->solutions.size(); i++)
+        previous_sols.push_back(pgd_sols->solutions.at(i));
+    previous_sols.push_back(pgd_sols->dirichlet_lift);
+    assert(previous_sols.size() == pgd_sols->solutions.size() + 1);
+
+    set_ext(previous_sols);
 }
 
 GradPreviousSolsTimesGradTest::GradPreviousSolsTimesGradTest(int i, Hermes::vector<std::string> areas, std::vector<double> coeffs)

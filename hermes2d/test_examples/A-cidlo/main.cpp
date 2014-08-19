@@ -7,11 +7,11 @@ using namespace Hermes::Hermes2D;
 const double MIN_EPS = 1 * EPS0;
 const double MAX_EPS = 10 * EPS0;
 
-const int NUM_MODES = 4;
-const int MAX_STEP_ITERATIONS = 5;
-const double STEP_ITERATIONS_TOLERANCE = 1e-2;
+const int NUM_MODES = 10;
+const int MAX_STEP_ITERATIONS = 25;
+const double STEP_ITERATIONS_TOLERANCE = 1e-10;
 
-const double test_x = 0.03;
+const double test_x = 0.04;
 const double test_y = 0.02;
 
 
@@ -279,15 +279,26 @@ Function1D PGDSolutions::iteration_update_parameter_columns()
     // tak aby vzdy zacinal jednickou
     // zrejme by se nemelo delat az bude nehomogenni Dirichletova podminka
     //  !!!!!!!
-    //newParam.normalize_first_to_one();
+    newParam.normalize_first_to_one();
+    //newParam.normalize_l2_norm_to_one();
 
     return newParam;
 }
 
 MeshFunctionSharedPtr<double> PGDSolutions::iteration_update_solution_changing_perm()
 {
-    WeakFormChangingPermInFull wf(this);
+     Hermes::Hermes2D::WeakForm<double>* wf = new WeakFormChangingPermInFull(this);
+     return iteration_update_solution(wf);
+}
 
+MeshFunctionSharedPtr<double> PGDSolutions::iteration_update_solution_columns()
+{
+     Hermes::Hermes2D::WeakForm<double>* wf = new WeakFormMultipleColumns(this);
+     return iteration_update_solution(wf);
+}
+
+MeshFunctionSharedPtr<double> PGDSolutions::iteration_update_solution(Hermes::Hermes2D::WeakForm<double>* wf)
+{
     // Initialize essential boundary conditions.
     Hermes::Hermes2D::DefaultEssentialBCConst<double> bc_essential_ground(definition->bc_labels_ground, 0);
 
@@ -299,16 +310,16 @@ MeshFunctionSharedPtr<double> PGDSolutions::iteration_update_solution_changing_p
     std::cout << "Ndofs: " << space->get_num_dofs() << std::endl;
 
     MeshFunctionSharedPtr<double> sln(new Solution<double>);
-    Hermes::Hermes2D::LinearSolver<double> linear_solver(&wf, space);
+    Hermes::Hermes2D::LinearSolver<double> linear_solver(wf, space);
 
     try
     {
         linear_solver.solve();
         double* sln_vector = linear_solver.get_sln_vector();
-        double max = 0;
-        for(int i = 0; i < space->get_num_dofs(); i++)
-            max = std::max(max, abs(sln_vector[i]));
-        printf("maximal sol comp %g\n", max);
+//        double max = 0;
+//        for(int i = 0; i < space->get_num_dofs(); i++)
+//            max = std::max(max, abs(sln_vector[i]));
+//        printf("maximal sol comp %g\n", max);
 
         Hermes::Hermes2D::Solution<double>::vector_to_solution(sln_vector, space, sln);
     }
@@ -328,7 +339,7 @@ FILE* convergence_file;
 
 Hermes::Hermes2D::Views::ScalarView viewS("Solution", new Hermes::Hermes2D::Views::WinGeom(0, 0, 1500, 700));
 
-void PGDSolutions::find_new_pair()
+void PGDSolutions::find_new_pair_changing_perm()
 {
     Function1D func_init(MIN_EPS, MAX_EPS, 100, 1);
     actual_parameter[0] = func_init;
@@ -338,8 +349,7 @@ void PGDSolutions::find_new_pair()
     while((difference > STEP_ITERATIONS_TOLERANCE) && (iteration < MAX_STEP_ITERATIONS))
     {
         std::cout << "iteration " << iteration << std::endl;
-        MeshFunctionSharedPtr<double> new_solution = iteration_update_solution_changing_perm();
-        actual_solution = new_solution;
+        actual_solution = iteration_update_solution_changing_perm();
         viewS.show(actual_solution);
         Function1D new_parameter = iteration_update_parameter_changing_perm();
         difference = new_parameter.diference(actual_parameter[0]) / new_parameter.norm();
@@ -352,6 +362,32 @@ void PGDSolutions::find_new_pair()
     parameters[0].push_back(actual_parameter[0]);
     solutions.push_back(actual_solution);
 
+}
+
+void PGDSolutions::find_new_pair_columns()
+{
+    Function1D func_init(0, N_HEIGHT_COARSE, 10 * N_HEIGHT_COARSE, 1);
+    actual_parameter[0] = func_init;
+
+    double difference = 1e10;
+    int iteration = 1;
+    while((difference > STEP_ITERATIONS_TOLERANCE) && (iteration < MAX_STEP_ITERATIONS))
+    {
+        std::cout << "iteration " << iteration << std::endl;
+        MeshFunctionSharedPtr<double> new_solution = iteration_update_solution_columns();
+        actual_solution = new_solution;
+        viewS.show(actual_solution);
+        Function1D new_parameter = iteration_update_parameter_columns();
+        difference = new_parameter.diference(actual_parameter[0]) / new_parameter.norm();
+        fprintf(convergence_file, "%g ", difference);
+        std::cout << "difference: " << difference << std::endl;
+        //new_parameter.print_short();
+        actual_parameter[0] = new_parameter;
+        iteration++;
+    }
+    fprintf(convergence_file, "\n");
+    parameters[0].push_back(actual_parameter[0]);
+    solutions.push_back(actual_solution);
 }
 
 PGDSolutions pgd_run_one_changing_area(ProblemDefinition* definition, Perms perms, MeshSharedPtr mesh)
@@ -367,7 +403,7 @@ PGDSolutions pgd_run_one_changing_area(ProblemDefinition* definition, Perms perm
 
     for(int i = 0; i < NUM_MODES; i++)
     {
-        pgd_solutions.find_new_pair();
+        pgd_solutions.find_new_pair_changing_perm();
 
         std::cout << "NUMBER OF SOLS " << pgd_solutions.solutions.size() << std::endl;
 
@@ -389,7 +425,43 @@ PGDSolutions pgd_run_one_changing_area(ProblemDefinition* definition, Perms perm
     return pgd_solutions;
 }
 
-void pgd_results(PGDSolutions pgd_solutions)
+PGDSolutions pgd_run_columns(ProblemDefinition* definition, Perms perms, MeshSharedPtr mesh)
+{
+    convergence_file = fopen("data/convergence.dat", "w");
+
+    PGDSolutions pgd_solutions(definition, perms, mesh, 1);
+
+    if(pgd_solutions.definition->use_dirichlet_lift())
+    {
+        pgd_solutions.dirichlet_lift = solve_problem(definition, AllOnePerms(), mesh, false);
+    }
+
+    for(int i = 0; i < NUM_MODES; i++)
+    {
+        pgd_solutions.find_new_pair_columns();
+
+        std::cout << "NUMBER OF SOLS " << pgd_solutions.solutions.size() << std::endl;
+
+        viewS.save_numbered_screenshot("pic/sol_mode%03d.bmp", i);
+        viewS.close();
+        Function1D last_param = pgd_solutions.parameters[0].back();
+
+        char filename[30];
+        sprintf(filename, "data/parameter%03d.dat", i);
+        FILE* file;
+        file = fopen(filename, "w");
+        for(int i = 0; i < last_param.n_points; i++)
+        {
+            fprintf(file, "%g  %g\n", last_param.points[i], last_param.values[i]);
+        }
+        fclose(file);
+    }
+
+    fclose(convergence_file);
+    return pgd_solutions;
+}
+
+void pgd_results_changing_perm(PGDSolutions pgd_solutions)
 {
     ProblemDefinition* definition = pgd_solutions.definition;
     Perms perms = pgd_solutions.perms;
@@ -433,6 +505,62 @@ void pgd_results(PGDSolutions pgd_solutions)
             fprintf(file_pgd_point, "%g  ", val);
             fprintf(file_pgd_energy, "%g  ", energy);
   }
+        fprintf(file_pgd_point, "\n");
+        fprintf(file_pgd_energy, "\n");
+    }
+
+    fclose(file_norm_point);
+    fclose(file_pgd_point);
+    fclose(file_norm_energy);
+    fclose(file_pgd_energy);
+}
+
+void pgd_results_columns(PGDSolutions pgd_solutions)
+{
+    ProblemDefinition* definition = pgd_solutions.definition;
+    Perms perms = pgd_solutions.perms;
+    MeshSharedPtr mesh = pgd_solutions.mesh;
+
+    FILE* file_norm_point = fopen("data/normal_calculations_point.dat", "w");
+    FILE* file_pgd_point = fopen("data/pgd_calculations_point.dat", "w");
+    FILE* file_norm_energy = fopen("data/normal_calculations_energy.dat", "w");
+    FILE* file_pgd_energy = fopen("data/pgd_calculations_energy.dat", "w");
+
+    for(int height = 0; height <= N_HEIGHT_COARSE; height+=2)
+    {
+        std::vector<int> profile;
+        profile.clear();
+        profile.push_back(height);
+        definition->set_profile(profile);
+        MeshFunctionSharedPtr<double> ref_sln = solve_problem(definition, perms, mesh, false);
+        double val_ref = ref_sln->get_pt_value(test_x, test_y)->val[0];
+        double energy_ref = calc_energy(ref_sln, definition, perms);
+
+        fprintf(file_norm_point, "%d  %g\n", height, val_ref);
+        fprintf(file_norm_energy, "%d  %g\n", height, energy_ref);
+
+        viewS.show(ref_sln);
+        char sol_name[20];
+        sprintf(sol_name, "pic/sol_%2d_ref.bmp", height);
+        viewS.save_screenshot(sol_name);
+
+        MeshFunctionSharedPtr<double>  pgd_sln = pgd_solutions.get_filter(height);
+        viewS.show(pgd_sln);
+        sprintf(sol_name, "pic/sol_%2d_pgd.bmp", height);
+        viewS.save_screenshot(sol_name);
+    }
+
+    for(int height = 0; height <= N_HEIGHT_COARSE; height++)
+    {
+        fprintf(file_pgd_point, "%d  ", height);
+        fprintf(file_pgd_energy, "%d  ", height);
+        for(int num_modes = 1; num_modes <= pgd_solutions.solutions.size(); num_modes++)
+        {
+            double val = pgd_solutions.get_pt_value(test_x, test_y, height, num_modes);
+            double energy = calc_energy(pgd_solutions.get_filter(height, num_modes), definition, perms);
+            fprintf(file_pgd_point, "%g  ", val);
+            fprintf(file_pgd_energy, "%g  ", energy);
+        }
         fprintf(file_pgd_point, "\n");
         fprintf(file_pgd_energy, "\n");
     }
@@ -501,10 +629,12 @@ int main(int argc, char* argv[])
 {
     Function1D::test();
 
-    Hermes::vector<int> profile_coarse(18,0,16,16,16,16,0,1);
+    //Hermes::vector<int> profile_coarse(18,0,16,16,16,16,0,1);
+    std::vector<int> profile_coarse;
+    profile_coarse.push_back(5);
 
     int active_electrode = 4;
-    double eps_rel_material = 7;
+    double eps_rel_material = 100;
 
     StandardPerms perms(eps_rel_material);
     ProblemDefinition* definition = new ProblemDefinitionCidlo1();
@@ -530,9 +660,13 @@ int main(int argc, char* argv[])
     //simple_run(definition, perms, mesh, true);
     //test_external_dirichlet_lift(definition, perms, mesh);
 
-    PGDSolutions pgd_solutions = pgd_run_one_changing_area(definition, perms, mesh);
-    test_pgd_energy(pgd_solutions);
-    pgd_results(pgd_solutions);
+    //PGDSolutions pgd_solutions = pgd_run_one_changing_area(definition, perms, mesh);
+    //test_pgd_energy(pgd_solutions);
+    //pgd_results_changing_perm(pgd_solutions);
+
+    PGDSolutions pgd_solutions = pgd_run_columns(definition, perms, mesh);
+    //test_pgd_energy(pgd_solutions);
+    pgd_results_columns(pgd_solutions);
 
     return 0;
 }
